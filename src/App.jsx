@@ -192,6 +192,229 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 z: randomRange(-200, 800), // Prevent extreme negative Z (close to camera)
                 color: { r: 100, g: 110, b: 130 }
             }));
+
+            // --- Phase 1: Strategic Intelligence (Magnetic Blue Cloud) ---
+            targets.current.phase1 = Array.from({ length: activeCount }).map((_, i) => {
+                // Dual-Layer Distribution: Core (80%) vs Halo (20%)
+                const isCore = Math.random() > 0.2;
+
+                // Random Volume Point
+                const u = Math.random();
+                const v = Math.random();
+                const theta = 2 * Math.PI * u;
+                const phi = Math.acos(2 * v - 1);
+
+                let r;
+                let color;
+
+                if (isCore) {
+                    // Dense Core (Radius ~220px)
+                    // Use cubic root for uniform volume density
+                    r = (h * 0.22) * Math.cbrt(Math.random());
+                    // Bright Cyan/Blue Core
+                    color = Math.random() > 0.5
+                        ? { r: 0, g: 200, b: 255 }  // Cyan
+                        : { r: 50, g: 100, b: 255 }; // Deep Blue
+                } else {
+                    // Scattered Halo (Magnetic Dust)
+                    // Radius ~250px to 600px
+                    r = (h * 0.25) + (Math.random() * h * 0.35);
+                    // Dimmer Blue Halo
+                    color = Math.random() > 0.5
+                        ? { r: 100, g: 150, b: 255 }
+                        : { r: 30, g: 60, b: 180 };
+                }
+
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.sin(phi) * Math.sin(theta);
+                const z = r * Math.cos(phi);
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    color: color,
+                    isDebris: false
+                };
+            });
+
+            // --- Phase 2: Visual Benchmarking (Dense 3D Blocks) ---
+            targets.current.phase2 = Array.from({ length: activeCount }).map((_, i) => {
+                // 3 Thick, Distinct 3D Blocks (Reduced count for clarity)
+                const layerCount = 3;
+                const layerIndex = i % layerCount;
+
+                // Block Dimensions (Square shape, reduced thickness)
+                const blockW = h * 0.45; // Width
+                const blockD = h * 0.45; // Depth (same as width for square)
+                const blockThick = 40; // Half of original thickness
+
+                // Vertical Stack
+                // Increased spacing (0.25) and centered on index 1 (-1, 0, 1)
+                const yBase = (layerIndex - 1) * (h * 0.25);
+
+                // Distribution: 10% Debris (Electric particles near blocks) vs 90% Block structure
+                const isDebris = Math.random() < 0.1;
+
+                let x, y, z;
+                let color;
+                let debris = false;
+
+                if (isDebris) {
+                    // Debris particles close to blocks, subtle electric effect
+                    const debrisRadius = blockW * 1.2; // Just around the block
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * debrisRadius;
+
+                    x = Math.cos(angle) * distance;
+                    z = Math.sin(angle) * distance;
+                    y = yBase + randomRange(-40, 40); // Subtle vertical scatter
+
+                    // Bright electric colors
+                    color = Math.random() > 0.5
+                        ? { r: 100, g: 255, b: 255 } // Bright Cyan
+                        : { r: 200, g: 240, b: 255 }; // Electric White
+
+                    debris = true;
+                } else {
+                    // Block structure (80% of particles)
+                    const isEdge = Math.random() < 0.5;
+
+                    if (isEdge) {
+                        // Edge Definition (Fuzzy Lines)
+                        const edgeAxis = Math.floor(Math.random() * 3);
+                        const sign1 = Math.random() > 0.5 ? 1 : -1;
+                        const sign2 = Math.random() > 0.5 ? 1 : -1;
+
+                        if (edgeAxis === 0) {
+                            x = (Math.random() - 0.5) * blockW;
+                            y = yBase + sign1 * blockThick * 0.5;
+                            z = sign2 * blockD * 0.5;
+                        } else if (edgeAxis === 1) {
+                            x = sign1 * blockW * 0.5;
+                            y = yBase + (Math.random() - 0.5) * blockThick;
+                            z = sign2 * blockD * 0.5;
+                        } else {
+                            x = sign1 * blockW * 0.5;
+                            y = yBase + sign2 * blockThick * 0.5;
+                            z = (Math.random() - 0.5) * blockD;
+                        }
+
+                        x += randomRange(-5, 5);
+                        y += randomRange(-5, 5);
+                        z += randomRange(-5, 5);
+
+                        color = Math.random() > 0.3
+                            ? { r: 50, g: 255, b: 255 }
+                            : { r: 255, g: 255, b: 255 };
+                    } else {
+                        // Volume Noise
+                        x = (Math.random() - 0.5) * blockW;
+                        z = (Math.random() - 0.5) * blockD;
+                        y = yBase + (Math.random() - 0.5) * blockThick;
+
+                        color = Math.random() > 0.5
+                            ? { r: 30, g: 100, b: 255 }
+                            : { r: 100, g: 200, b: 255 };
+                    }
+                }
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    color: color,
+                    isDebris: debris
+                };
+            });
+
+            // --- Phase 3: Experience Logic (6 Dense Spheres) ---
+            targets.current.phase3 = Array.from({ length: activeCount }).map((_, i) => {
+                // 6 spheres arranged in hexagonal pattern
+                const sphereIndex = i % 6; // 0-5
+                const particlesPerSphere = Math.floor(activeCount / 6);
+                const indexInSphere = Math.floor(i / 6);
+
+                // Hexagonal positions (1 center + 5 around in circle)
+                const centerDist = h * 0.22; // Distance from center
+                let centerX = 0, centerY = 0;
+
+                if (sphereIndex === 0) {
+                    // Center sphere
+                    centerX = 0;
+                    centerY = 0;
+                } else {
+                    // 5 spheres around center (72 degrees apart)
+                    const angle = ((sphereIndex - 1) * 72) * (Math.PI / 180);
+                    centerX = Math.cos(angle) * centerDist;
+                    centerY = Math.sin(angle) * centerDist;
+                }
+
+                const radius = h * 0.1; // Sphere radius
+
+                // Create SOLID sphere (not just surface)
+                // Random point inside sphere using uniform distribution
+                const u = Math.random();
+                const v = Math.random();
+                const w = Math.random();
+
+                const theta = u * 2 * Math.PI;
+                const phi = Math.acos(2 * v - 1);
+                const r = Math.cbrt(w) * radius; // Cube root for uniform volume distribution
+
+                const x = centerX + r * Math.sin(phi) * Math.cos(theta);
+                const y = centerY + r * Math.sin(phi) * Math.sin(theta);
+                const z = r * Math.cos(phi);
+
+                // Distance from sphere center for gradient
+                const distFromCenter = r / radius; // 0 (center) to 1 (surface)
+
+                // Color gradient: bright cyan in center, darker blue at edges
+                let color;
+                if (distFromCenter < 0.3) {
+                    // Core: Bright Cyan/White
+                    color = { r: 150, g: 255, b: 255 };
+                } else if (distFromCenter < 0.7) {
+                    // Mid: Cyan
+                    color = { r: 80, g: 200, b: 255 };
+                } else {
+                    // Outer: Dark Blue
+                    color = { r: 30, g: 120, b: 200 };
+                }
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    color: color,
+                    isDebris: false,
+                    sphereIndex: sphereIndex, // Store which sphere this particle belongs to
+                    sphereCenterX: centerX,   // Store sphere center for animation
+                    sphereCenterY: centerY
+                };
+            });
+
+            // --- Phase 4: Winning Delivery (Result -> AI Star) ---
+            targets.current.phase4 = Array.from({ length: activeCount }).map((_, i) => {
+                // 3D Astroid (Star shape)
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const size = h * 0.35;
+
+                // Math for 4-point star curve
+                const sinPhi = Math.sin(phi);
+                const x = size * Math.pow(Math.cos(theta) * sinPhi, 3);
+                const y = size * Math.pow(Math.sin(theta) * sinPhi, 3);
+                const z = size * Math.pow(Math.cos(phi), 3);
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    color: { r: 255, g: 255, b: 255 }, // Pure White Core
+                    isDebris: false
+                };
+            });
         };
 
         const initParticles = (w, h) => {
@@ -259,79 +482,57 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 ctx.fillRect(0, 0, w, h);
             }
 
+            // --- Pre-calculated Phase & Offset Logic (Optimized for Stability) ---
+            let activePhase = targets.current.phase0;
+            let slideOffset = 0;
+            let layerIndex = -1;
+            const maxOffset = 250; // Adjusted visibility (was 350)
+
+            // Simple State Machine for Targets & Position
+
+            if (scrollValue < vh * 0.8) {
+                // Hero Section
+                activePhase = targets.current.phase0; // Rings
+                slideOffset = 0; // Center
+                layerIndex = -1;
+            }
+            else if (scrollValue < vh * 2.0) {
+                // Section 1: Strategic Intelligence (DNA Helix)
+                activePhase = targets.current.phase1 || targets.current.phase0;
+                slideOffset = maxOffset;
+                layerIndex = 0;
+            }
+            else if (scrollValue < vh * 3.0) {
+                // Section 2: Visual Benchmarking (Wireframe)
+                activePhase = targets.current.phase2 || targets.current.phase0;
+                slideOffset = -maxOffset;
+                layerIndex = 1;
+            }
+            else if (scrollValue < vh * 4.0) {
+                // Section 3: Experience Logic (6 Spheres)
+                activePhase = targets.current.phase3 || targets.current.phase0;
+                slideOffset = maxOffset; // Right side
+                layerIndex = 2;
+            }
+            else if (scrollValue < vh * 6.0) {
+                // Section 4: Winning Delivery (AI Star)
+                activePhase = targets.current.phase4 || targets.current.phase0;
+                slideOffset = -maxOffset;
+                layerIndex = 3;
+            }
+
             particles.current.forEach((p, i) => {
                 let target;
-                let activePhase;
-                let layerIndex = -1;
-                let lerpFactor = 0.04;
+                let lerpFactor = 0.08;
 
-                // --- 1. Determine Target (Always Phase 0) & Scroll-Linked Offset ---
-                let slideOffset = 0; // The horizontal push
+                // [NEW] Slower accumulation for Data Sphere (Section 1)
+                if (layerIndex === 0) lerpFactor = 0.02;
 
-                // Enforce Phase 0 (Rings) always
-                activePhase = targets.current.phase0;
-                const subIndex = (i % 5000);
-                if (subIndex % 2 === 0) target = activePhase[(subIndex % 2500) * 2 + 1];
-                else target = activePhase[5000 + (subIndex % 2500) * 2 + 1];
-
-                // Calculate Slide Offset based on Scroll
-                const maxOffset = 450; // Optimized for centering in 50% column (avoid edge sticking)
-
-                // --- Pre-emptive Snap Logic (Corrected for 14vh Scale) ---
-                // S1 (Right): 0.1 -> 0.9 (Ready at 1.0)
-                // S2 (Left): 1.5 -> 2.0 (Ready at 2.0)
-                // S3 (Right): 2.5 -> 3.0 (Ready at 3.0)
-                // S4 (Left): 3.5 -> 4.0 (Ready at 4.0)
-
-                if (scrollValue < vh * 0.1) {
-                    slideOffset = 0;
-                } else if (scrollValue < vh * 1.5) {
-                    // Section 1: Strategic Intelligence (Target: Right)
-                    layerIndex = 0;
-
-                    const start = vh * 0.1;
-                    const duration = vh * 0.8;
-                    const progress = Math.min(Math.max((scrollValue - start) / duration, 0), 1);
-                    const easeOut = 1 - Math.pow(1 - progress, 3);
-                    slideOffset = maxOffset * easeOut;
-
-                } else if (scrollValue < vh * 2.5) {
-                    // Section 2: Visual Benchmarking (Target: Left)
-                    layerIndex = 1;
-
-                    // Transition starts at 1.5 (Mid S1), ends at 2.0 (Start S2)
-                    const start = vh * 1.5;
-                    const duration = vh * 0.5;
-                    const pRaw = Math.min(Math.max((scrollValue - start) / duration, 0), 1);
-                    const progress = pRaw < 0.5 ? 2 * pRaw * pRaw : 1 - Math.pow(-2 * pRaw + 2, 2) / 2;
-
-                    slideOffset = maxOffset - (maxOffset * 2 * progress); // 450 -> -450
-
-                } else if (scrollValue < vh * 3.5) {
-                    // Section 3: Experience Logic (Target: Right)
-                    layerIndex = 2;
-
-                    // Transition starts at 2.5 (Mid S2), ends at 3.0 (Start S3)
-                    const start = vh * 2.5;
-                    const duration = vh * 0.5;
-                    const pRaw = Math.min(Math.max((scrollValue - start) / duration, 0), 1);
-                    const progress = pRaw < 0.5 ? 2 * pRaw * pRaw : 1 - Math.pow(-2 * pRaw + 2, 2) / 2;
-
-                    slideOffset = -maxOffset + (maxOffset * 2 * progress); // -450 -> 450
-
-                } else if (scrollValue < vh * 6.0) {
-                    // Section 4: Winning Delivery (Target: Left)
-                    layerIndex = 3;
-
-                    // Transition starts at 3.5 (Mid S3), ends at 4.0 (Start S4)
-                    const start = vh * 3.5;
-                    const duration = vh * 0.5;
-                    const pRaw = Math.min(Math.max((scrollValue - start) / duration, 0), 1);
-                    const progress = pRaw < 0.5 ? 2 * pRaw * pRaw : 1 - Math.pow(-2 * pRaw + 2, 2) / 2;
-
-                    slideOffset = maxOffset - (maxOffset * 2 * progress); // 450 -> -450
-                } else {
-                    slideOffset = 0;
+                // Select Target Particle
+                // Map current particle index to target phase index
+                // Since counts match (activeCount), we can map 1:1 or use standard modulo
+                if (activePhase && activePhase.length > 0) {
+                    target = activePhase[i % activePhase.length];
                 }
 
                 if (!target) return;
@@ -341,7 +542,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 let ty = target.y + (target.isDebris ? 0 : cy);
                 let tz = target.z;
 
-                // --- 2. Effects & Debris ---
+                // --- 2. Effects & Debris (Simplified) ---
                 if (target.isDebris && i < 5000 && scrollValue < vh * 1.0) {
                     // Suck effect (Intro)
                     const suckProgress = (currentTime * 0.3 + p.randomSeed) % 1.0;
@@ -356,46 +557,141 @@ const ParticleEngine = ({ scrollYProgress }) => {
                     tz = target.z;
                 }
 
-                // --- Scroll-Linked Vertical Parallax (Subtle Rise) ---
-                const parallaxY = (scrollValue % vh) * 0.1;
-                ty -= parallaxY;
+                // --- REMOVED: Scroll-Linked Vertical Parallax (caused unintended drifting) ---
+                // const parallaxY = (scrollValue % vh) * 0.1;
+                // ty -= parallaxY;
 
                 // --- 3. Constant Rotation ---
-                const lx = tx - cx;
-                const ly = ty - cy;
-                const lz = tz;
-                const rotationSpeed = p.rotType === 0 ? 0.35 : 0.22;
+                let lx = tx - cx;
+                let ly = ty - cy;
+                let lz = tz;
+                // Rotation Logic:
+                // - Default (Hero): Rotate
+                // - Section 1 (Funnel): Rotate FAST (Vortex effect)
+                // - Section 2 (Blocks): No rotation
+                // - Section 3 (Spheres): No rotation
+                let rotationSpeed = 0;
+                if (layerIndex === -1) rotationSpeed = p.rotType === 0 ? 0.35 : 0.22; // Hero
+                else if (layerIndex === 0) rotationSpeed = 0.5; // Funnel (Fast Spin)
+                else if (layerIndex === 1) rotationSpeed = 0; // Section 2 (No Rotation)
+                else if (layerIndex === 2) rotationSpeed = 0; // Section 3 (No Rotation)
+
+                // --- Unified Rotation & Position Logic ---
+                // Force unified behavior for Section 1 (Data Sphere), Section 2 (Blocks), and Section 3 (Spheres)
+                const effectiveRotType = (layerIndex === 0 || layerIndex === 1 || layerIndex === 2) ? 0 : p.rotType;
+
                 const angle = currentTime * rotationSpeed;
 
-                if (p.rotType === 0) {
-                    const cosY = Math.cos(angle);
-                    const sinY = Math.sin(angle);
-                    // Apply 0.8 scale to keep particles tighter during showcase
+                if (effectiveRotType === 0) {
+                    // [NEW] Semi-Profile View for Section 2 (Deep 3D Perception)
+                    if (layerIndex === 1) {
+                        // 1. Tilt Axis (Rotate around X) to show top face
+                        const tiltAngle = 0.6; // ~34 degrees for better top view
+                        const cosT = Math.cos(tiltAngle);
+                        const sinT = Math.sin(tiltAngle);
+
+                        // Apply tilt to local coordinates BEFORE Y-rotation
+                        // Note: ly, lz must be 'let' variables (fixed in previous step)
+                        const ty1 = ly * cosT - lz * sinT;
+                        const tz1 = ly * sinT + lz * cosT;
+                        ly = ty1;
+                        lz = tz1;
+                    }
+
+                    // Y-Axis Rotation
+                    // For Section 2, rotate to match isometric reference (45 degrees left)
+                    const angleOffset = (layerIndex === 1) ? -0.785 : 0; // -45 degrees for isometric view
+
+                    const cosY = Math.cos(angle + angleOffset);
+                    const sinY = Math.sin(angle + angleOffset);
                     const s = (layerIndex !== -1) ? 0.8 : 1.0;
-                    tx = cx + (lx * s * cosY - lz * s * sinY); // Rotate around 0
+
+                    // Apply Y-Rotation and positioning
+                    tx = cx + (lx * s * cosY - lz * s * sinY);
                     ty = cy + ly * s;
                     tz = lx * s * sinY + lz * s * cosY;
+
+                    // [S2: Breathing Animation - Layers compress and expand]
+                    if (layerIndex === 1) {
+                        const blockIndex = i % 3; // 0: top, 1: middle, 2: bottom
+
+                        if (blockIndex !== 1) { // Only animate top and bottom blocks
+                            // Breathing effect: compress towards center, then expand
+                            const breathe = Math.sin(currentTime * 1.2) * 30; // ±30px movement
+
+                            if (blockIndex === 0) {
+                                // Top block moves down when compressing
+                                ty -= breathe;
+                            } else if (blockIndex === 2) {
+                                // Bottom block moves up when compressing
+                                ty += breathe;
+                            }
+                        }
+                        // Middle block (blockIndex === 1) stays fixed
+                    }
+
+                    // [S3: Sphere Animations]
+                    if (layerIndex === 2) {
+                        const sphereIndex = target.sphereIndex || 0;
+
+                        // 1. Organic wobble effect for all spheres
+                        const wobbleX = Math.sin(currentTime * 2 + i * 0.1) * 8;
+                        const wobbleY = Math.cos(currentTime * 1.8 + i * 0.15) * 8;
+                        const wobbleZ = Math.sin(currentTime * 2.2 + i * 0.12) * 8;
+
+                        tx += wobbleX;
+                        ty += wobbleY;
+                        tz += wobbleZ;
+
+                        // 2. Particle transfer: ALL particles from outer 5 spheres move to CENTER SPHERE
+                        if (sphereIndex !== 0) { // Only outer 5 spheres
+                            // Target: CENTER SPHERE position (sphereIndex 0)
+                            const centerSphereX = cx + 0; // Center sphere X in screen space
+                            const centerSphereY = cy + 0; // Center sphere Y in screen space
+                            const centerSphereZ = 0;
+
+                            const transferProgress = (Math.sin(currentTime * 1.2 + i * 0.5) + 1) / 2; // 0 to 1
+
+                            // Interpolate from current position to center sphere
+                            tx = tx + (centerSphereX - tx) * transferProgress * 0.8;
+                            ty = ty + (centerSphereY - ty) * transferProgress * 0.8;
+                            tz = tz + (centerSphereZ - tz) * transferProgress * 0.8;
+                        }
+                    }
+
+                    // [S4: Core Pulse]
+                    if (layerIndex === 3) {
+                        const pulse = 1 + Math.sin(currentTime * 3) * 0.05;
+                        tx = cx + (tx - cx) * pulse;
+                        ty = cy + (ty - cy) * pulse;
+                        tz = tz * pulse;
+                    }
                 } else {
+                    // X-Axis Rotation (Ring 2 in Hero)
                     const cosX = Math.cos(angle);
                     const sinX = Math.sin(angle);
                     const s = (layerIndex !== -1) ? 0.8 : 1.0;
+
                     tx = cx + lx * s;
                     ty = cy + (ly * s * cosX - lz * s * sinX);
                     tz = ly * s * sinX + lz * s * cosX;
                 }
 
-                // --- 4. Apply Scroll Slide AFTER Rotation ---
-                // This ensures rotation is local, but position slides
+                // Apply Slide Logic GLOBALLY derived from Scroll
                 if (!target.isDebris) {
-                    tx += slideOffset;
+                    // For Section 1, we set layerIndex=0 and slideOffset=maxOffset.
+                    // Always apply slideOffset if it exists.
+                    if (layerIndex !== -1) tx += slideOffset;
                 }
 
-                ty += Math.sin(currentTime * 0.5) * 5;
+                // --- REMOVED: Vertical Float (caused unintended wobble) ---
+                // ty += Math.sin(currentTime * 0.5) * 5;
 
-                // --- 4. Showcase Sync ---
+                // --- 5. Showcase Sync (Static - No Breathing) ---
                 let colorMultiplier = 1;
                 // Update Breathing Logic for 4 Phases
                 if (scrollValue >= vh * 0.9 && layerIndex !== -1 && i >= 5000) {
+                    // No breathing, just color shift
                     let activeStep = 0;
                     // Match the boundaries defined above
                     if (scrollValue > vh * 3.5) activeStep = 3;
@@ -403,9 +699,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
                     else if (scrollValue > vh * 1.5) activeStep = 1;
 
                     if (layerIndex === activeStep) {
-                        const breathe = Math.sin(currentTime * 2 + i * 0.1) * 20;
-                        // Reduced pull drastically. Only slight float.
-                        tz -= (50 + breathe);
+                        // tz -= 50; // Optional subtle pop
                         colorMultiplier = 1.6;
                     } else {
                         // Push inactive phases even further
@@ -414,7 +708,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
                     }
                 }
 
-                // --- 5. Mouse ---
+                // --- 6. Mouse Interaction ---
                 const dx = p.x - mouse.current.x;
                 const dy = p.y - mouse.current.y;
                 if (dx * dx + dy * dy < 40000) {
@@ -424,7 +718,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
                     p.y += (dy / d) * force;
                 }
 
-                // --- 6. Physics/Lerp ---
+                // --- 7. Physics/Lerp ---
                 p.x += (tx - p.x) * lerpFactor;
                 p.y += (ty - p.y) * lerpFactor;
                 p.z += (tz - p.z) * lerpFactor;
@@ -460,11 +754,32 @@ const ParticleEngine = ({ scrollYProgress }) => {
 
         window.addEventListener('resize', resize);
         window.addEventListener('mousemove', handleMouseMove);
+
+        // --- KEYBOARD LISTENER FOR VARIANTS ---
+        const handleKeyDown = (e) => {
+            if (e.key === '1') {
+                console.log("Switching to Variant 1: Sphere");
+                // Hacky way to swap the target reference for live preview
+                targets.current.phase1 = targets.current.phase1_v1;
+            } else if (e.key === '2') {
+                console.log("Switching to Variant 2: Funnel");
+                targets.current.phase1 = targets.current.phase1_v2;
+            } else if (e.key === '3') {
+                console.log("Switching to Variant 3: Landscape");
+                targets.current.phase1 = targets.current.phase1_v3;
+            } else if (e.key === '0') {
+                // Reset (Need to re-run init logic or just reload, but for now simplistic)
+                resize();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
         resize();
         animate();
         return () => {
             window.removeEventListener('resize', resize);
             window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('keydown', handleKeyDown); // Cleanup
             cancelAnimationFrame(frame);
         };
     }, []);
@@ -1123,7 +1438,7 @@ const LandingPage = () => {
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: false, margin: "-100px" }}
                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                            className="relative group mt-20"
+                            className="relative group mt-0"
                         >
                             <div className="absolute -inset-8 bg-gradient-to-br from-orange-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
                             <div className="relative p-0 bg-transparent">
