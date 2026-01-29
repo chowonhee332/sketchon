@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ModularAnalysisView from './ModularAnalysisView';
 import {
     Search, Globe, Layout, Users, Target, Compass,
     Layers, Zap, Loader2, CheckCircle2, AlertCircle,
@@ -10,12 +11,12 @@ import {
 const SectionHeader = ({ icon: Icon, title, subtitle, badge }) => (
     <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <Icon size={20} className="text-blue-400" />
+            <div className="p-3 bg-[#3182F6]/10 rounded-[14px] border border-[#3182F6]/20">
+                <Icon size={20} className="text-[#3182F6]" />
             </div>
             <div>
-                <h2 className="text-xl font-bold font-['Outfit'] text-white">{title}</h2>
-                <p className="text-xs text-slate-500">{subtitle}</p>
+                <h2 className="text-2xl font-bold font-['Pretendard'] text-white">{title}</h2>
+                <p className="text-sm font-medium text-[#B0B8C1]">{subtitle}</p>
             </div>
         </div>
         {badge && (
@@ -30,13 +31,13 @@ const Card = ({ children, className = "" }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-[#161616] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors shadow-xl ${className}`}
+        className={`bg-[#2C2C2E] border border-[#333D4B] rounded-[24px] p-8 hover:border-[#4E5968] transition-all shadow-xl ${className}`}
     >
         {children}
     </motion.div>
 );
 
-const AnalyzeDashboard = ({ projectTitle, messages = [], selectedSection = 'all' }) => {
+const AnalyzeDashboard = ({ projectTitle, messages = [], selectedSection = 'all', analysisData = null, selectedModules = [], onToggleModule = () => { }, onSendToDelivery = () => { } }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(true);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState("Initializing AI Synthesis...");
@@ -104,8 +105,20 @@ const AnalyzeDashboard = ({ projectTitle, messages = [], selectedSection = 'all'
         );
     }
 
+    // If we have analysis data, show the modular view
+    if (analysisData) {
+        return (
+            <ModularAnalysisView
+                analysisData={analysisData}
+                selectedModules={selectedModules}
+                onToggleModule={onToggleModule}
+                onSendToDelivery={onSendToDelivery}
+            />
+        );
+    }
+
     return (
-        <div className="w-full h-full bg-[#0a0a0a] text-white overflow-y-auto overflow-x-hidden pt-6 px-8 font-['Inter'] custom-scrollbar">
+        <div className="w-full h-full bg-[#1B1C1D] text-white overflow-y-auto overflow-x-hidden pt-6 px-8 font-['Pretendard'] custom-scrollbar">
             <div className="max-w-7xl mx-auto pb-20">
 
                 {/* Header Section - Hide if a specific section is selected to avoid redundancy */}

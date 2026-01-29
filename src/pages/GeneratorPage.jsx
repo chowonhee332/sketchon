@@ -4,8 +4,11 @@ import ChatSidebar from '../components/ChatSidebar';
 import PreviewCanvas from '../components/PreviewCanvas';
 import AnalyzeDashboard from '../components/AnalyzeDashboard';
 import PresentationBuilder from '../components/PresentationBuilder';
+import ProjectInputModal from '../components/ProjectInputModal';
+import AnalysisProgress from '../components/AnalysisProgress';
 import { v0 } from '../lib/gemini';
-import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, PanelLeftClose, PanelLeftOpen, Edit3, CircleUser } from 'lucide-react';
+import { generateModularAnalysis, buildUIPrompt } from '../lib/unifiedArchitect';
+import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, PanelLeftClose, PanelLeftOpen, Edit3, CircleUser, Layout, Compass, Target, Users, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import creonLogo from '../assets/creon-logo.png';
 import creonLogoWhite from '../assets/creon-logo-white.png';
@@ -32,6 +35,13 @@ const GeneratorPage = () => {
     const [tempTitle, setTempTitle] = useState('');
     const [analyzeSubTab, setAnalyzeSubTab] = useState('all');
 
+    // AI Analysis States
+    const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+    const [analysisStatus, setAnalysisStatus] = useState('idle'); // 'idle' | 'input' | 'analyzing' | 'complete'
+    const [analysisData, setAnalysisData] = useState(null);
+    const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 5 });
+    const [selectedModules, setSelectedModules] = useState(['strategicContext', 'intelligence', 'benchmark', 'userStrategy', 'implementation']); // Default: all selected
+
     const [projectTitle, setProjectTitle] = useState('Untitled Project');
     const hasInitialLoaded = React.useRef(false);
     const [panelWidth, setPanelWidth] = useState(600);
@@ -39,41 +49,7 @@ const GeneratorPage = () => {
     const [projectId, setProjectId] = useState(null);
 
     // Initial load & ID management
-    useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        const query = searchParams.get('q');
-        const id = searchParams.get('id');
-        const platform = searchParams.get('platform');
-
-        if (platform) setDeviceType(platform);
-
-        // If it's a different project than current one, or if it's the first load
-        if (id && id !== projectId) {
-            setProjectId(id);
-            const savedProjects = JSON.parse(localStorage.getItem('sketchon_projects') || '[]');
-            const project = savedProjects.find(p => p.id === id);
-
-            if (project) {
-                setProjectTitle(project.title);
-                setMessages(project.messages || { research: [], ui: [], ppt: [] });
-                setGeneratedCode(project.code || '');
-                return;
-            }
-        }
-
-        // Fresh Start logic (no ID or different initial load)
-        if (!hasInitialLoaded.current) {
-            if (!id) {
-                const newId = `proj_${Date.now()}`;
-                setProjectId(newId);
-                if (query) {
-                    setProjectTitle(query.length > 20 ? query.substring(0, 20) + '...' : query);
-                    handleSendMessage(query, currentModel, platform || deviceType);
-                }
-            }
-            hasInitialLoaded.current = true;
-        }
-    }, [location.search]); // Listen to URL changes
+    // Initial load useEffect moved below to access handleAnalysisSubmit
 
     // Auto-Save Effect
     useEffect(() => {
@@ -162,6 +138,113 @@ const GeneratorPage = () => {
         return () => window.removeEventListener('message', handleCreonMessage);
     }, [currentModel, activeTab]); // Re-bind if model changes (or remove dependency if handleSendMessage is stable)
 
+    // AI Analysis Handlers
+    const handleAnalysisSubmit = async (userInput) => {
+        try {
+            setAnalysisStatus('analyzing');
+            setAnalysisProgress({ current: 0, total: 5 });
+
+            // Simulate progress updates (in real implementation, this would be based on actual API progress)
+            const progressInterval = setInterval(() => {
+                setAnalysisProgress(prev => {
+                    if (prev.current < prev.total) {
+                        return { ...prev, current: prev.current + 1 };
+                    }
+                    return prev;
+                });
+            }, 3000);
+
+            // Generate modular analysis
+            const result = await generateModularAnalysis(userInput);
+
+            clearInterval(progressInterval);
+            setAnalysisProgress({ current: 5, total: 5 });
+            setAnalysisData(result);
+            setAnalysisStatus('complete');
+
+            // Auto-switch to Analyze tab to show results
+            setActiveTab('research');
+
+            // Optionally generate UI based on Implementation module
+            if (result.implementation?.uiConcept) {
+                const uiPrompt = buildUIPrompt(result.implementation.uiConcept);
+                // You can auto-trigger UI generation here or let user do it manually
+                console.log('UI Prompt ready:', uiPrompt);
+            }
+        } catch (error) {
+            console.error('Analysis error:', error);
+            setAnalysisStatus('idle');
+            alert(`분석 중 오류가 발생했습니다.\n\n오류 상세: ${error.message || error}`);
+        }
+    };
+
+    // Initial load & ID management (Moved here to use handleAnalysisSubmit)
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const query = searchParams.get('q');
+        const id = searchParams.get('id');
+        const platform = searchParams.get('platform');
+
+        if (platform) setDeviceType(platform);
+
+        // If it's a different project than current one, or if it's the first load
+        if (id && id !== projectId) {
+            setProjectId(id);
+            const savedProjects = JSON.parse(localStorage.getItem('sketchon_projects') || '[]');
+            const project = savedProjects.find(p => p.id === id);
+
+            if (project) {
+                setProjectTitle(project.title);
+                setMessages(project.messages || { research: [], ui: [], ppt: [] });
+                setGeneratedCode(project.code || '');
+                return;
+            }
+        }
+
+        // Fresh Start logic (no ID or different initial load)
+        if (!hasInitialLoaded.current) {
+            if (!id) {
+                const newId = `proj_${Date.now()}`;
+                setProjectId(newId);
+
+                // [MODIFIED] Auto-start Modular Analysis based on query & params
+                if (query) {
+                    const domain = searchParams.get('domain');
+                    const target = searchParams.get('target');
+                    const style = searchParams.get('style');
+
+                    setProjectTitle(query.length > 20 ? query.substring(0, 20) + '...' : query);
+
+                    // Directly trigger analysis with DETAILED context
+                    handleAnalysisSubmit({
+                        keyword: query,
+                        projectType: domain || (platform === 'mobile' ? 'Mobile App' : 'Web Service'),
+                        targetUser: target || 'General Users',
+                        goals: `Successful Project Launch with ${style || 'Modern'} style`,
+                        notes: `Visual Style: ${style || 'Modern'}. Generated from Landing Input.`
+                    });
+                }
+            }
+            hasInitialLoaded.current = true;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.search]);
+
+    const handleSendToDelivery = () => {
+        if (selectedModules.length === 0) {
+            alert('최소 1개 이상의 모듈을 선택해주세요.');
+            return;
+        }
+
+        // Switch to Delivery tab
+        setActiveTab('ppt');
+
+        // TODO: Pass selected modules data to PresentationBuilder
+        console.log('Selected modules for delivery:', selectedModules);
+        console.log('Analysis data:', analysisData);
+    };
+
+
     const handleSendMessage = async (input, modelId = currentModel, type = undefined, attachments = []) => {
         setIsLoading(true);
         const generationType = type || deviceType; // Use passed type or current state
@@ -220,9 +303,9 @@ const GeneratorPage = () => {
     return (
         <div className="flex flex-col h-screen bg-white overflow-hidden font-['Inter']">
             {/* Header - Dark Mode */}
-            {/* Header - Dark Mode */}
-            <header className="h-14 border-b border-white/10 flex items-center justify-between bg-[#050505] z-20 text-white pl-0 pr-4">
-                <div className="flex items-center h-full border-r border-white/10 px-4 gap-3 w-[380px] shrink-0 transition-all duration-300 ease-in-out">
+            {/* Header - Toss Dark Mode */}
+            <header className="h-14 border-b border-[#333D4B] flex items-center justify-between bg-[#1B1C1D] z-20 text-white pl-0 pr-4">
+                <div className="flex items-center h-full border-r border-[#333D4B] px-4 gap-3 w-[380px] shrink-0 transition-all duration-300 ease-in-out">
                     <Link to="/" className="text-slate-400 hover:text-white shrink-0 p-2 hover:bg-white/10 rounded-md transition-colors">
                         <ChevronLeft size={20} />
                     </Link>
@@ -257,8 +340,8 @@ const GeneratorPage = () => {
                     </div>
                 </div>
 
-                {/* Centered Tab Navigation */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex p-1 bg-white/5 rounded-lg border border-white/5">
+                {/* Centered Tab Navigation - Toss Style Pills */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex p-1 bg-[#2C2C2E] rounded-full border border-[#333D4B]">
                     {[
                         { id: 'research', label: 'Analyze', desc: 'RFP와 시장을 분석하여 논리적 근거를 만드는 단계' },
                         { id: 'ui', label: 'Visualize', desc: 'Creon 엔진으로 아이디어를 눈에 보이는 실체로 바꾸는 단계' },
@@ -268,7 +351,7 @@ const GeneratorPage = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             title={tab.desc}
-                            className={`px-6 py-1.5 text-xs font-bold rounded-md transition-all tracking-wider ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                            className={`px-6 py-1.5 text-xs font-bold rounded-full transition-all tracking-wider ${activeTab === tab.id ? 'bg-[#3182F6] text-white shadow-lg shadow-blue-900/20' : 'text-[#B0B8C1] hover:text-white hover:bg-[#333D4B]'}`}
                         >
                             {tab.label}
                         </button>
@@ -301,9 +384,9 @@ const GeneratorPage = () => {
 
             {/* Main Content */}
             <main className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar - Dark Mode */}
+                {/* Left Sidebar - Toss Dark Mode */}
                 <div
-                    className={`flex-shrink-0 bg-[#050505] border-r border-white/10 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[380px]' : 'w-0 border-r-0 overflow-hidden'}`}
+                    className={`flex-shrink-0 bg-[#1B1C1D] border-r border-[#333D4B] transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[380px]' : 'w-0 border-r-0 overflow-hidden'}`}
                 >
                     <div className="w-[380px] h-full"> {/* Inner container to maintain width during animation */}
                         <ChatSidebar
@@ -318,15 +401,16 @@ const GeneratorPage = () => {
                                 setSelectedArtboard(null);
                                 setSelectedArea(null);
                             }}
+                            onStartAnalysis={() => setIsInputModalOpen(true)}
                         />
                     </div>
                 </div>
 
                 {/* Main Content Area (Tabs) */}
-                <div className="flex-1 min-w-0 bg-[#0a0a0a] relative flex flex-col overflow-hidden">
+                <div className="flex-1 min-w-0 bg-[#1B1C1D] relative flex flex-col overflow-hidden">
                     {/* Sub Tab Navigation for Analyze */}
                     {activeTab === 'research' && (
-                        <div className="flex items-center gap-6 px-8 py-3 bg-[#0a0a0a] border-b border-white/5 overflow-x-auto scrollbar-hide shrink-0 z-10 transition-all duration-300">
+                        <div className="flex items-center gap-6 px-8 py-3 bg-[#1B1C1D] border-b border-[#333D4B] overflow-x-auto scrollbar-hide shrink-0 z-10 transition-all duration-300">
                             {[
                                 { id: 'all', label: 'Overall', icon: Layout },
                                 { id: 'guide', label: '1. Guide', icon: Compass },
@@ -353,9 +437,19 @@ const GeneratorPage = () => {
                                 projectTitle={projectTitle}
                                 messages={messages.research || []}
                                 selectedSection={analyzeSubTab}
+                                analysisData={analysisData}
+                                selectedModules={selectedModules}
+                                onToggleModule={setSelectedModules}
+                                onSendToDelivery={handleSendToDelivery}
                             />
                         )}
-                        {activeTab === 'ppt' && <PresentationBuilder />}
+                        {activeTab === 'ppt' && (
+                            <PresentationBuilder
+                                analysisData={analysisData}
+                                selectedModules={selectedModules}
+                                generatedUIUrl={generatedCode ? 'data:text/html;base64,' + btoa(generatedCode) : null}
+                            />
+                        )}
 
                         <div className={`w-full h-full flex flex-col ${activeTab === 'ui' ? 'block' : 'hidden'}`}>
                             {/* Canvas Controls (Lifted to Bottom-Left) */}
@@ -435,8 +529,8 @@ const GeneratorPage = () => {
             </main >
             {/* Rename Modal */}
             {isRenameModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 w-[400px] shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[#2C2C2E] border border-[#333D4B] rounded-[24px] p-8 w-[400px] shadow-2xl">
                         <h3 className="text-lg font-bold text-white mb-4">Rename Project</h3>
                         <input
                             autoFocus
@@ -502,6 +596,25 @@ const GeneratorPage = () => {
                     )}
                 </div>
             </div>
+
+            {/* Project Input Modal */}
+            <ProjectInputModal
+                isOpen={isInputModalOpen}
+                onClose={() => setIsInputModalOpen(false)}
+                onSubmit={handleAnalysisSubmit}
+                initialKeyword=""
+            />
+
+            {/* Analysis Progress Overlay */}
+            {analysisStatus === 'analyzing' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+                    <AnalysisProgress
+                        status={analysisStatus}
+                        currentStep={analysisProgress.current}
+                        totalSteps={analysisProgress.total}
+                    />
+                </div>
+            )}
         </div >
     );
 };

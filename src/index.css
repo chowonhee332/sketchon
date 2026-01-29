@@ -7,38 +7,66 @@
 
 @layer base {
   :root {
-    /* Framer-like Dark Theme Base */
-    --background: 0 0% 0%;
-    /* Pure Black #000000 */
+    /* Toss Design System (TDS) Dark Theme */
+    --background: 220 5% 11%;
+    /* #1B1C1D */
     --foreground: 0 0% 100%;
+    /* #FFFFFF */
 
-    --card: 0 0% 5%;
+    --card: 225 3% 18%;
+    /* #2C2C2E */
     --card-foreground: 0 0% 100%;
+    /* #FFFFFF */
 
-    --popover: 0 0% 5%;
+    --popover: 225 3% 18%;
+    /* #2C2C2E */
     --popover-foreground: 0 0% 100%;
 
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-    /* Black text on White primary */
+    --primary: 215 91% 58%;
+    /* #3182F6 (Toss Blue) */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 4% 20%;
+    /* #333D4B (Muted Gray) */
+    --secondary-foreground: 216 10% 90%;
+    /* #E5E8EB */
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 4% 15%;
+    /* Background subtle */
+    --muted-foreground: 216 8% 72%;
+    /* #B0B8C1 (Toss Cool Gray) */
 
-    --accent: 0 0% 10%;
+    --accent: 215 91% 58%;
+    /* #3182F6 (Same as primary for consistency) */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 355 86% 60%;
+    /* #F04452 (Toss Red) */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
-    --ring: 0 0% 100%;
+    --border: 220 4% 20%;
+    /* #333D4B */
+    --input: 220 4% 20%;
+    --ring: 215 91% 58%;
+    /* Focus Ring - Toss Blue */
 
-    --radius: 0.5rem;
+    --radius: 1.5rem;
+    /* 24px - Round shapes */
+
+    /* Custom Toss Colors */
+    --toss-blue: #3182F6;
+    --toss-red: #F04452;
+    --toss-green: #35E88E;
+    /* Fluorescence Green for Positive */
+    --toss-grey-100: #F2F4F6;
+    --toss-grey-200: #E5E8EB;
+    --toss-grey-300: #D1D6DB;
+    --toss-grey-400: #B0B8C1;
+    --toss-grey-500: #8B95A1;
+    --toss-grey-600: #6B7684;
+    --toss-grey-700: #4E5968;
+    --toss-grey-800: #333D4B;
+    --toss-grey-900: #1B1C1D;
   }
 }
 

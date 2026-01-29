@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { ArrowRight, ArrowUp, ChevronDown, Wand2, Layers, Cpu, Users, BarChart, Settings, Home, Search, Bell, X, CheckCircle2, Zap, RefreshCw, Smartphone, Monitor, Play } from 'lucide-react';
+import { ArrowRight, ArrowUp, ChevronDown, Wand2, Layers, Cpu, Users, BarChart, Settings, Home, Search, Bell, X, CheckCircle2, Zap, RefreshCw, Smartphone, Monitor, Play, Key, LogOut, CircleUser, Layout, Menu } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import UserManagement from './pages/admin/UserManagement';
 import ApiSettings from './pages/admin/ApiSettings';
 import GeneratorPage from './pages/GeneratorPage';
-import { analyzePrompt } from './lib/gemini';
+import { analyzePrompt, getGeminiKey, updateGenAIContent } from './lib/gemini';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import ProjectDrawer from './components/ProjectDrawer';
+import creonLogoWhite from './assets/creon-logo-white.png';
 // Removed FeatureShowcase import as we are integrating it into the particle engine
 
 // --- Context & State Management ---
@@ -1028,133 +1030,219 @@ const RefinementModal = ({ isOpen, onClose, initialData, userPrompt, onConfirm }
     const [data, setData] = useState(initialData || { domain: '', target: '', style: '' });
     const [loading, setLoading] = useState(false);
 
+    // Predefined Options for better AI Context
+    const OPTIONS = {
+        domain: [
+            'SaaS Dashboard', 'E-commerce', 'Portfolio', 'Landing Page',
+            'Social Network', 'Healthcare', 'Fintech', 'Education', 'Admin Panel'
+        ],
+        target: [
+            'General Users', 'Professionals', 'Gen Z', 'Developers',
+            'Enterprise (B2B)', 'Students', 'Elderly', 'Gamers'
+        ],
+        style: [
+            'Minimal & Clean', 'Dark Mode', 'Corporate & Trust', 'Bento Grid',
+            'Playful & Pop', 'Brutalist', 'Glassmorphism', 'Luxury'
+        ]
+    };
+
     useEffect(() => {
         if (initialData) setData(initialData);
     }, [initialData]);
 
-
+    const handleChipSelect = (category, value) => {
+        setData(prev => ({ ...prev, [category]: value }));
+    };
 
     const handleConfirm = () => {
         setLoading(true);
-        // Simulate a small delay or proceed immediately
         setTimeout(() => {
             onConfirm(data);
             setLoading(false);
         }, 500);
     };
 
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    key="modal-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
                 >
                     <motion.div
-                        key="modal-content"
                         initial={{ scale: 0.95, y: 10, opacity: 0 }}
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         exit={{ scale: 0.95, y: 10, opacity: 0 }}
-                        transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-                        className="relative w-full max-w-lg overflow-hidden rounded-[2rem] shadow-2xl"
+                        className="relative w-full max-w-2xl bg-[#121212] rounded-[24px] overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[90vh]"
                     >
-                        {/* Glass Container Background */}
-                        <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-xl" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-                        <div className="absolute inset-0 border border-white/10 rounded-[2rem] pointer-events-none" />
-
-                        <button
-                            onClick={onClose}
-                            className="absolute top-5 right-5 z-10 p-2 rounded-full hover:bg-white/10 text-slate-400 transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <div className="relative z-0 p-8">
-                            <div className="mb-8 text-center">
-                                <div className="mx-auto w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                                    <Wand2 className="text-blue-500" size={24} />
+                        {/* Header */}
+                        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between shrink-0 bg-[#121212]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                    <Wand2 size={18} className="text-blue-500" />
                                 </div>
-                                <h2 className="text-2xl font-bold font-['Outfit'] text-white mb-2 tracking-tight">AI Project Setup</h2>
-                                <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
-                                    {initialData?.explanation || "Based on your request, we've configured the optimal settings for your project."}
-                                </p>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white font-['Outfit']">Project Setup</h2>
+                                    <p className="text-sm text-slate-400">AI가 최적의 결과를 낼 수 있도록 도와주세요.</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Scrollable Content */}
+                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+                            {/* 0. Original Request */}
+                            <div className="p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl">
+                                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 block">Original Request</label>
+                                <p className="text-white text-sm font-medium">"{userPrompt}"</p>
                             </div>
 
-                            <div className="space-y-6">
-                                {/* User Prompt Display */}
-                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5 block">Original Request</label>
-                                    <p className="text-sm text-slate-200 line-clamp-2 leading-relaxed font-light">"{userPrompt}"</p>
+                            {/* 1. Domain */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-bold text-slate-300">1. Project Type (Domain)</label>
+                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Select One</span>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Domain</label>
-                                        <input
-                                            type="text"
-                                            className="w-full h-11 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-white/20"
-                                            value={data.domain}
-                                            onChange={(e) => setData({ ...data, domain: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Target</label>
-                                        <input
-                                            type="text"
-                                            className="w-full h-11 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-white/20"
-                                            value={data.target}
-                                            onChange={(e) => setData({ ...data, target: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Visual Style</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Minimal', 'Modern', 'Corporate', 'Playful', 'Dark', 'Brutalist'].map(tag => (
-                                            <button
-                                                key={tag}
-                                                onClick={() => setData({ ...data, style: tag })}
-                                                className={`px-4 py-2 rounded-full text-xs font-medium border transition-all ${data.style === tag
-                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                                                    : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white hover:border-white/20'
-                                                    }`}
-                                            >
-                                                {tag}
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {OPTIONS.domain.map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => handleChipSelect('domain', opt)}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.domain === opt
+                                                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/50'
+                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                    {/* Custom Input for Domain */}
                                     <input
                                         type="text"
-                                        placeholder="Enter custom style..."
-                                        className="w-full h-11 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all mt-2 placeholder:text-white/20"
-                                        value={data.style}
-                                        onChange={(e) => setData({ ...data, style: e.target.value })}
+                                        placeholder="Direct Input..."
+                                        value={OPTIONS.domain.includes(data.domain) ? '' : data.domain}
+                                        onChange={(e) => handleChipSelect('domain', e.target.value)}
+                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-blue-500 outline-none min-w-[120px]"
                                     />
                                 </div>
-
-                                <Button
-                                    onClick={handleConfirm}
-                                    disabled={loading}
-                                    className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-base mt-2 shadow-lg shadow-blue-500/25 transition-all transform hover:scale-[1.02]"
-                                >
-                                    {loading ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Designing Interface...</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <Zap className="fill-white" size={18} />
-                                            <span>Generate UI</span>
-                                        </div>
-                                    )}
-                                </Button>
                             </div>
+
+                            {/* 2. Target */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-bold text-slate-300">2. Target Audience</label>
+                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Who is it for?</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {OPTIONS.target.map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => handleChipSelect('target', opt)}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.target === opt
+                                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/50'
+                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Pet Owners"
+                                        value={OPTIONS.target.includes(data.target) ? '' : data.target}
+                                        onChange={(e) => handleChipSelect('target', e.target.value)}
+                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-emerald-500 outline-none min-w-[120px]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 3. Style */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-bold text-slate-300">3. Visual Style</label>
+                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Look & Feel</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {OPTIONS.style.map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => handleChipSelect('style', opt)}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.style === opt
+                                                ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-900/50'
+                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Retro"
+                                        value={OPTIONS.style.includes(data.style) ? '' : data.style}
+                                        onChange={(e) => handleChipSelect('style', e.target.value)}
+                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-purple-500 outline-none min-w-[120px]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer: Selected Stack & Action */}
+                        <div className="p-6 border-t border-white/5 bg-[#1a1a1a] shrink-0">
+                            {/* Selected Stack */}
+                            <div className="flex items-center gap-3 mb-6 overflow-x-auto pb-2 scrollbar-none">
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">Selected:</div>
+                                {data.domain && (
+                                    <span className="px-3 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-bold whitespace-nowrap">
+                                        {data.domain}
+                                    </span>
+                                )}
+                                {data.target && (
+                                    <span className="px-3 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold whitespace-nowrap">
+                                        {data.target}
+                                    </span>
+                                )}
+                                {data.style && (
+                                    <span className="px-3 py-1 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold whitespace-nowrap">
+                                        {data.style}
+                                    </span>
+                                )}
+                                {(!data.domain && !data.target && !data.style) && (
+                                    <span className="text-slate-600 text-xs italic">Make selections above to optimize AI results</span>
+                                )}
+                            </div>
+
+                            <Button
+                                onClick={handleConfirm}
+                                disabled={loading}
+                                className="w-full h-14 bg-white text-black hover:bg-slate-200 rounded-xl font-bold text-lg shadow-xl transition-all transform hover:scale-[1.01]"
+                            >
+                                {loading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                        <span>Initiating Project...</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="fill-black" size={20} />
+                                        <span>Start AI Analysis</span>
+                                    </div>
+                                )}
+                            </Button>
                         </div>
                     </motion.div>
                 </motion.div>
@@ -1163,8 +1251,123 @@ const RefinementModal = ({ isOpen, onClose, initialData, userPrompt, onConfirm }
     );
 };
 
+const ApiSettingsModal = ({ isOpen, onClose }) => {
+    const [apiKey, setApiKey] = useState(getGeminiKey() || '');
+    const [status, setStatus] = useState('idle'); // 'idle' | 'validating' | 'success' | 'error'
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const handleSave = () => {
+        updateGenAIContent(apiKey);
+        onClose();
+    };
+
+    const validateKey = async () => {
+        if (!apiKey) {
+            setStatus('error');
+            setErrorMsg('API Key를 입력해주세요.');
+            return;
+        }
+
+        setStatus('validating');
+        try {
+            const genAIInstance = new GoogleGenerativeAI(apiKey);
+            const model = genAIInstance.getGenerativeModel({ model: "gemini-3-flash-preview" });
+            const result = await model.generateContent("Hello. Just say 'OK'.");
+            const response = await result.response;
+            const text = response.text();
+
+            if (text) {
+                setStatus('success');
+            } else {
+                throw new Error("Invalid response");
+            }
+        } catch (err) {
+            console.error(err);
+            setStatus('error');
+            setErrorMsg(err.message || '유효하지 않은 API Key입니다.');
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            >
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="w-full max-w-md bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl p-6"
+                >
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <Settings size={20} className="text-slate-400" />
+                            <h3 className="text-lg font-bold text-white">API Settings</h3>
+                        </div>
+                        <button onClick={onClose} className="p-1 hover:bg-white/5 rounded-full text-slate-400">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Gemini API Key</label>
+                            <div className="relative">
+                                <input
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="AIzaSy..."
+                                    className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 outline-none transition-all pr-12"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                                    {status === 'success' && <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
+                                    {status === 'error' && <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />}
+                                    {status === 'validating' && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                                </div>
+                            </div>
+                            <p className="mt-2 text-[10px] text-slate-500">
+                                키는 브라우저의 로컬 스토리지에만 안전하게 저장되며 서버로 전송되지 않습니다.
+                            </p>
+                        </div>
+
+                        {status === 'error' && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-[11px] text-red-400">
+                                {errorMsg}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={validateKey}
+                                disabled={status === 'validating'}
+                                className="flex-1 h-12 border border-white/10 hover:bg-white/5 text-white rounded-xl text-sm font-medium transition-all"
+                            >
+                                검증하기
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all"
+                            >
+                                적용하기
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 const Navbar = () => {
     const [isModalOpen, setModalOpen] = useState(false);
+    const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isDrawerOpen, setDrawerOpen] = useState(false);
 
     return (
@@ -1174,32 +1377,93 @@ const Navbar = () => {
                 animate={{ y: 0 }}
                 className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-transparent"
             >
-                <div className="flex items-center gap-2">
-                    <span className="font-['Outfit'] font-bold text-xl tracking-tight text-white">Sketchon</span>
+                <div className="flex items-center gap-12">
+                    <Link to="/" className="flex items-center gap-2 group">
+                        <img src={creonLogoWhite} alt="Sketchon" className="h-6 opacity-90 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                    <nav className="hidden md:flex items-center gap-8">
+                        {['Services', 'Showcase', 'About', 'Pricing'].map((item) => (
+                            <a
+                                key={item}
+                                href={`#${item.toLowerCase()}`}
+                                className="text-sm font-medium text-slate-400 hover:text-white transition-colors tracking-tight"
+                            >
+                                {item}
+                            </a>
+                        ))}
+                    </nav>
                 </div>
-                <div className="hidden md:flex items-center gap-6">
+
+                <div className="flex items-center gap-4 relative">
+                    {/* [UPDATED] Profile Dropdown Area */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                            className="flex items-center gap-2 pl-2 pr-1 h-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
+                        >
+                            <span className="text-xs font-bold text-slate-300 ml-2 group-hover:text-white">Wonhee Cho</span>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border border-white/20 flex items-center justify-center overflow-hidden">
+                                <CircleUser size={20} className="text-white/80" />
+                            </div>
+                        </button>
+
+                        <AnimatePresence>
+                            {isProfileOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)} />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 mt-2 w-56 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-20 py-2"
+                                    >
+                                        <div className="px-4 py-3 border-b border-white/5 mb-2">
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Signed in as</p>
+                                            <p className="text-sm font-medium text-white truncate">wh.cho@creon.ai</p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setIsApiModalOpen(true);
+                                                setIsProfileOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                                        >
+                                            <Key size={16} />
+                                            <span>API Configuration</span>
+                                        </button>
+
+                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+                                            <Layout size={16} />
+                                            <span>My Projects</span>
+                                        </button>
+
+                                        <div className="h-[1px] bg-white/5 my-2" />
+
+                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+                                            <LogOut size={16} />
+                                            <span>Sign Out</span>
+                                        </button>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <button
                         onClick={() => setDrawerOpen(true)}
-                        className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                        className="bg-white text-black text-sm font-bold px-5 h-10 rounded-full hover:bg-slate-200 transition-all hidden sm:block"
                     >
-                        Projects
+                        Get Started
                     </button>
-                    <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Showcase</a>
-                    <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Updates</a>
-                    <Link to="/admin" className="text-xs font-bold text-white/40 hover:text-white transition-colors tracking-widest uppercase px-3 py-1 border border-white/10 rounded-full">
-                        Admin
-                    </Link>
-                    <Button variant="ghost" className="text-white hover:bg-white/10 h-8 px-3 text-sm">Log In</Button>
-                    <Button
-                        onClick={() => setModalOpen(true)}
-                        className="rounded-full h-9 px-5 bg-white hover:bg-slate-200 text-black font-semibold text-sm transition-all"
-                    >
-                        Sign Up
-                    </Button>
+                    <button className="p-2 text-slate-400 hover:text-white md:hidden">
+                        <Menu size={24} />
+                    </button>
                 </div>
             </motion.header>
 
-            <SignUpModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
+            <ApiSettingsModal isOpen={isApiModalOpen} onClose={() => setIsApiModalOpen(false)} />
+
             <ProjectDrawer isOpen={isDrawerOpen} onClose={() => setDrawerOpen(false)} />
         </>
     );
@@ -1214,36 +1478,17 @@ const LandingPage = () => {
     const [refinementModalOpen, setRefinementModalOpen] = useState(false);
     const [refinementData, setRefinementData] = useState(null);
 
-    const handlePromptSubmit = async (e) => {
+    const handlePromptSubmit = (e) => {
         e.preventDefault();
         if (prompt.trim()) {
-            setIsAnalyzing(true);
-
-            let resultData = null;
-
-            try {
-                // Race analysis against a 3-second timeout to ensure UI responsiveness
-                const analysisPromise = analyzePrompt(prompt);
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Analysis timeout")), 3000)
-                );
-
-                resultData = await Promise.race([analysisPromise, timeoutPromise]);
-            } catch (error) {
-                console.warn("Analysis failed or timed out:", error);
-                // Fallback data if API fails/timeouts
-                resultData = {
-                    domain: "Web Project",
-                    target: "General Audience",
-                    style: "Modern",
-                    explanation: "Could not analyze prompt in time. Please configure manually."
-                };
-            } finally {
-                // ALWAYS open the modal, whether analysis succeeded or failed
-                setRefinementData(resultData);
-                setRefinementModalOpen(true);
-                setIsAnalyzing(false);
-            }
+            // Open modal immediately with default values
+            setRefinementData({
+                domain: platform === 'mobile' ? "Mobile App" : "Web Service",
+                target: "General Users",
+                style: "Modern & Minimal",
+                explanation: "Configure your project details below."
+            });
+            setRefinementModalOpen(true);
         }
     };
 

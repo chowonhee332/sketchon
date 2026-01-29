@@ -1,7 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
+// Helper to get API Key with priority: localStorage > Env
+export const getGeminiKey = () => {
+    const savedKey = localStorage.getItem('VITE_GEMINI_API_KEY');
+    return savedKey || import.meta.env.VITE_GEMINI_API_KEY;
+};
+
+// Initialize genAI with current key
+// Note: We'll re-initialize genAI inside functions to support key changes without refresh
+let genAI = new GoogleGenerativeAI(getGeminiKey());
+
+export const updateGenAIContent = (newKey) => {
+    localStorage.setItem('VITE_GEMINI_API_KEY', newKey);
+    genAI = new GoogleGenerativeAI(newKey);
+};
 
 const SYSTEM_PROMPT = (deviceType) => `
 You are an expert UI/UX designer and frontend developer, equivalent to Google's "Stitch" AI.
@@ -54,7 +66,7 @@ Return ONLY valid JSON(no markdown) with the following key - value pairs:
 `;
 
 export const v0 = async (prompt, history = [], modelId = 'gemini-3-pro-preview', deviceType = 'mobile', attachments = []) => {
-    const targetModel = modelId || 'gemini-3-pro-preview';
+    const targetModel = modelId || 'gemini-3-flash-preview';
 
     const runGeneration = async (modelName) => {
         const model = genAI.getGenerativeModel({
@@ -122,7 +134,7 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-3-pro-preview',
 };
 
 export const analyzePrompt = async (prompt) => {
-    const targetModel = 'gemini-2.0-flash';
+    const targetModel = 'gemini-3-flash-preview';
     try {
         const model = genAI.getGenerativeModel({
             model: targetModel,

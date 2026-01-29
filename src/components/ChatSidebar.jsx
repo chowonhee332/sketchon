@@ -117,7 +117,7 @@ const ModelSelector = ({ currentModel, onSelect }) => {
     );
 };
 
-const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, onClearSelection }) => {
+const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, onClearSelection, onStartAnalysis }) => {
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState([]); // Array of { id, type, base64, preview }
     const fileInputRef = useRef(null);
@@ -172,9 +172,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-white/5 backdrop-blur-2xl border-r border-white/10 text-white">
-
-
+        <div className="w-full h-full flex flex-col bg-[#1B1C1D] border-r border-[#333D4B] text-white">
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide font-mono text-sm">
                 <AnimatePresence>
                     {messages.map((msg, idx) => (
@@ -198,7 +196,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                                 )}
                                 <span className="text-[10px] text-slate-600">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
-                            <div className={`pl-5 text-slate-300 leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'text-blue-100' : ''}`}>
+                            <div className={`p-4 rounded-[20px] leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-[#3182F6] text-white ml-8 rounded-tr-none' : 'bg-[#2C2C2E] text-white mr-8 rounded-tl-none'}`}>
                                 {msg.content}
                             </div>
                         </motion.div>
@@ -216,6 +214,17 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
             </div>
 
             <div className="p-4 bg-transparent">
+                {/* AI Analysis Button */}
+                {onStartAnalysis && (
+                    <button
+                        onClick={onStartAnalysis}
+                        className="w-full mb-3 px-4 py-3 bg-[#3182F6] hover:bg-[#2974E0] text-white font-bold rounded-[20px] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                    >
+                        <Sparkles size={18} />
+                        <span>AI 프로젝트 분석 시작</span>
+                    </button>
+                )}
+
                 <AnimatePresence mode="wait">
                     {selectedArea ? (
                         <motion.div
@@ -269,7 +278,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="relative group bg-[#111] border border-white/10 rounded-xl transition-all focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 shadow-sm">
+                <form onSubmit={handleSubmit} className="relative group bg-[#2C2C2E] border border-[#333D4B] rounded-[24px] transition-all focus-within:border-[#3182F6] focus-within:ring-1 focus-within:ring-[#3182F6]/20 shadow-sm">
                     <div className="flex items-start p-2">
                         <textarea
                             value={input}
@@ -282,7 +291,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                                 }
                             }}
                             placeholder="Describe your UI changes..."
-                            className="w-full bg-transparent border-none text-sm text-slate-200 placeholder:text-slate-600 focus:ring-0 resize-none min-h-[60px] max-h-[200px] py-1 px-2 font-mono leading-relaxed scrollbar-hide outline-none"
+                            className="w-full bg-transparent border-none text-sm text-[#B0B8C1] placeholder:text-[#6B7684] focus:ring-0 resize-none min-h-[60px] max-h-[200px] py-1 px-2 font-mono leading-relaxed scrollbar-hide outline-none"
                             disabled={isLoading}
                         />
                     </div>
@@ -315,7 +324,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                         <button
                             type="submit"
                             disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-[#3182F6]/10 hover:bg-[#3182F6] text-[#3182F6] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-xs font-bold uppercase tracking-wider transition-all"
                         >
                             <span>Execute</span>
                             <Send size={12} />
