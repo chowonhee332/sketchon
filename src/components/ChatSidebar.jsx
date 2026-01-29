@@ -5,15 +5,6 @@ import { Send, Wand2, User, Bot, Loader2, Sparkles, ChevronDown, Check, Info, X,
 
 const MODELS = [
     {
-        id: 'gemini-3-pro-preview',
-        name: 'Gemini 3 Pro Preview',
-        badge: 'New',
-        description: 'Latest generation model with advanced reasoning.',
-        pros: ['State-of-the-art', 'Best constraints adherence', 'Deepest logic'],
-        cons: ['Preview stability', 'Rate limits'],
-        features: ['Advanced Reasoning', 'Complex Layouts']
-    },
-    {
         id: 'gemini-2.0-flash',
         name: 'Gemini 2.0 Flash',
         badge: 'Fastest',
@@ -25,11 +16,20 @@ const MODELS = [
     {
         id: 'gemini-1.5-pro',
         name: 'Gemini 1.5 Pro',
-        badge: 'Stable',
+        badge: 'Smartest',
         description: 'High reasoning capabilities for complex UI structures.',
         pros: ['Deepest reasoning', 'Complex logic handling', '1M+ Context'],
         cons: ['Slower than flash'],
         features: ['Premium Logic', 'Full Page Design']
+    },
+    {
+        id: 'gemini-1.5-flash',
+        name: 'Gemini 1.5 Flash',
+        badge: 'Stable',
+        description: 'Balanced speed and intelligence for general tasks.',
+        pros: ['Stable performance', 'Cost-effective', 'Fast response'],
+        cons: ['Medium reasoning'],
+        features: ['General UI', 'Standard Layouts']
     }
 ];
 
@@ -43,7 +43,7 @@ const ModelSelector = ({ currentModel, onSelect }) => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors group px-2 py-1 rounded-md hover:bg-white/5"
             >
-                <span>{MODELS.find(m => m.id === currentModel)?.name || 'Select Model'}</span>
+                <span>Model</span>
                 <ChevronDown size={12} className={`transition-transform duration-200 opacity-50 group-hover:opacity-100 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -117,7 +117,7 @@ const ModelSelector = ({ currentModel, onSelect }) => {
     );
 };
 
-const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, onClearSelection, onStartAnalysis }) => {
+const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, onClearSelection, onStartAnalysis, onToggleSidebar }) => {
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState([]); // Array of { id, type, base64, preview }
     const fileInputRef = useRef(null);
@@ -172,7 +172,21 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-[#1B1C1D] border-r border-[#333D4B] text-white">
+        <div className="w-full h-full flex flex-col bg-transparent text-white">
+            {/* Sidebar Header */}
+            <div className="px-5 py-3 flex items-center justify-between border-b border-white/5">
+                <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest leading-none mb-1">SKETCHON</span>
+                    <span className="text-sm font-bold text-white">Agent</span>
+                </div>
+                <button
+                    onClick={() => onToggleSidebar && onToggleSidebar()}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-colors"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide font-mono text-sm">
                 <AnimatePresence>
                     {messages.map((msg, idx) => (
@@ -214,16 +228,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
             </div>
 
             <div className="p-4 bg-transparent">
-                {/* AI Analysis Button */}
-                {onStartAnalysis && (
-                    <button
-                        onClick={onStartAnalysis}
-                        className="w-full mb-3 px-4 py-3 bg-[#3182F6] hover:bg-[#2974E0] text-white font-bold rounded-[20px] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-                    >
-                        <Sparkles size={18} />
-                        <span>AI 프로젝트 분석 시작</span>
-                    </button>
-                )}
+                {/* Manual Analysis button removed - Automated flow implemented */}
 
                 <AnimatePresence mode="wait">
                     {selectedArea ? (
@@ -278,7 +283,7 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="relative group bg-[#2C2C2E] border border-[#333D4B] rounded-[24px] transition-all focus-within:border-[#3182F6] focus-within:ring-1 focus-within:ring-[#3182F6]/20 shadow-sm">
+                <form onSubmit={handleSubmit} className="relative group bg-[#161618] border border-white/5 rounded-[24px] transition-all focus-within:border-[#3182F6] focus-within:ring-1 focus-within:ring-[#3182F6]/20 shadow-sm">
                     <div className="flex items-start p-2">
                         <textarea
                             value={input}
@@ -290,8 +295,8 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                                     handleSubmit(e);
                                 }
                             }}
-                            placeholder="Describe your UI changes..."
-                            className="w-full bg-transparent border-none text-sm text-[#B0B8C1] placeholder:text-[#6B7684] focus:ring-0 resize-none min-h-[60px] max-h-[200px] py-1 px-2 font-mono leading-relaxed scrollbar-hide outline-none"
+                            placeholder="Message Agent..."
+                            className="w-full bg-transparent border-none text-sm text-[#B0B8C1] placeholder:text-[#6B7684] focus:ring-0 resize-none min-h-[44px] py-3 px-2 font-mono leading-relaxed scrollbar-hide outline-none"
                             disabled={isLoading}
                         />
                     </div>
@@ -324,10 +329,9 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                         <button
                             type="submit"
                             disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-[#3182F6]/10 hover:bg-[#3182F6] text-[#3182F6] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-xs font-bold uppercase tracking-wider transition-all"
+                            className="flex items-center justify-center h-8 w-8 bg-[#3182F6] hover:bg-blue-500 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-full transition-all flex-shrink-0"
                         >
-                            <span>Execute</span>
-                            <Send size={12} />
+                            <Send size={14} />
                         </button>
                     </div>
                 </form>

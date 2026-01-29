@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Monitor, Smartphone, Tablet, ZoomIn, ZoomOut, Wand2, Edit3, Eye, MoreHorizontal, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { Maximize2, Minimize2, Monitor, Smartphone, Tablet, ZoomIn, ZoomOut, Wand2, Edit3, Eye, MoreHorizontal, ThumbsUp, ThumbsDown, Loader2, Hand } from 'lucide-react';
 
 import WireframeLoader from './WireframeLoader';
 
@@ -238,7 +238,7 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
                                     exit={{ opacity: 0, scale: 1.1 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <WireframeLoader />
+                                    <WireframeLoader deviceType={deviceType} />
                                 </motion.div>
                             ) : (code ? (
                                 <motion.div
@@ -336,36 +336,38 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
 
 
             {/* Floating Bottom Toolbar (Refined Zoom & Tools) */}
-            < div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1.5 bg-[#1e1e1e]/90 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/10 z-50" >
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-[#1e1e1e]/90 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/10 z-50">
                 {/* Interaction Modes */}
-                < div className="flex items-center gap-1" >
+                <div className="flex items-center gap-1.5">
                     <button
                         onClick={() => setInteractionMode('hand')}
-                        className={`p - 2 rounded - xl transition - all ${interactionMode === 'hand' ? 'bg-white/15 text-white shadow-inner' : 'text-slate-500 hover:text-slate-300'} `}
+                        className={`p-2 rounded-xl transition-all ${interactionMode === 'hand' ? 'bg-white/15 text-white shadow-inner' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                         title="Hand Mode (Pan)"
                     >
-                        <span className="flex items-center justify-center w-5 h-5 leading-none text-lg">✋</span>
+                        <Hand size={18} />
                     </button>
                     <button
                         onClick={() => setInteractionMode('select')}
-                        className={`p - 2 rounded - xl transition - all ${interactionMode === 'select' ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'text-slate-500 hover:text-slate-300'} `}
+                        className={`p-2 rounded-xl transition-all ${interactionMode === 'select' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                         title="Selection Mode (Marquee)"
                     >
                         <Wand2 size={18} />
                     </button>
-                </div >
+                </div>
 
-                <div className="w-[1px] h-4 bg-white/10 mx-2" />
+                <div className="w-[1px] h-4 bg-white/10 mx-1.5" />
 
                 {/* Zoom Controls */}
-                <button onClick={() => setScale(Math.max(0.1, scale - 0.1))} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-white" title="Zoom Out">
-                    <ZoomOut size={18} />
-                </button>
-                <span className="font-mono text-xs w-10 text-center select-none font-bold text-blue-400">{Math.round(scale * 100)}%</span>
-                <button onClick={() => setScale(Math.min(5, scale + 0.1))} className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-white" title="Zoom In">
-                    <ZoomIn size={18} />
-                </button>
-            </div >
+                <div className="flex items-center gap-1">
+                    <button onClick={() => setScale(Math.max(0.1, scale - 0.1))} className="p-2 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white" title="Zoom Out">
+                        <ZoomOut size={18} />
+                    </button>
+                    <span className="font-mono text-[11px] w-12 text-center select-none font-bold text-blue-400">{Math.round(scale * 100)}%</span>
+                    <button onClick={() => setScale(Math.min(5, scale + 0.1))} className="p-2 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white" title="Zoom In">
+                        <ZoomIn size={18} />
+                    </button>
+                </div>
+            </div>
         </div >
     );
 };

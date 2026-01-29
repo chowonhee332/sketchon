@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { ArrowRight, ArrowUp, ChevronDown, Wand2, Layers, Cpu, Users, BarChart, Settings, Home, Search, Bell, X, CheckCircle2, Zap, RefreshCw, Smartphone, Monitor, Play, Key, LogOut, CircleUser, Layout, Menu } from 'lucide-react';
+import { ArrowRight, ArrowUp, ChevronDown, Wand2, Layers, Cpu, Users, Palette, Lightbulb, BarChart, Settings, Home, Search, Bell, X, CheckCircle2, Zap, RefreshCw, Smartphone, Monitor, Play, Key, LogOut, CircleUser, Layout, Menu, Grip, Plus, Image, Globe, Info, Book, ClipboardCopy, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import UserManagement from './pages/admin/UserManagement';
@@ -1027,31 +1027,44 @@ const SignUpModal = ({ isOpen, onClose }) => {
 };
 
 const RefinementModal = ({ isOpen, onClose, initialData, userPrompt, onConfirm }) => {
-    const [data, setData] = useState(initialData || { domain: '', target: '', style: '' });
+    const [data, setData] = useState(initialData || {
+        serviceName: '', coreValue: '', coreTask: '',
+        targetUser: '', painPoint: '', solution: '',
+        hierarchy: '', visualStyle: '', techStack: 'React, Tailwind CSS'
+    });
     const [loading, setLoading] = useState(false);
-
-    // Predefined Options for better AI Context
-    const OPTIONS = {
-        domain: [
-            'SaaS Dashboard', 'E-commerce', 'Portfolio', 'Landing Page',
-            'Social Network', 'Healthcare', 'Fintech', 'Education', 'Admin Panel'
-        ],
-        target: [
-            'General Users', 'Professionals', 'Gen Z', 'Developers',
-            'Enterprise (B2B)', 'Students', 'Elderly', 'Gamers'
-        ],
-        style: [
-            'Minimal & Clean', 'Dark Mode', 'Corporate & Trust', 'Bento Grid',
-            'Playful & Pop', 'Brutalist', 'Glassmorphism', 'Luxury'
-        ]
-    };
+    const [recommending, setRecommending] = useState(false);
 
     useEffect(() => {
-        if (initialData) setData(initialData);
+        if (initialData) setData(prev => ({ ...prev, ...initialData }));
     }, [initialData]);
 
-    const handleChipSelect = (category, value) => {
-        setData(prev => ({ ...prev, [category]: value }));
+    const handleChange = (field, value) => {
+        setData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleRecommend = async () => {
+        setRecommending(true);
+        try {
+            // Give AI the current context to refine
+            const context = `Current Setup: 
+            Name: ${data.serviceName}
+            Task: ${data.coreTask}
+            User: ${data.targetUser}
+            Original Request: ${userPrompt}`;
+
+            const analysis = await analyzePrompt(`Please refine and recommend a professional setup for: ${context}`);
+            if (analysis) {
+                setData(prev => ({
+                    ...prev,
+                    ...analysis
+                }));
+            }
+        } catch (error) {
+            console.error("Recommendation failed:", error);
+        } finally {
+            setRecommending(false);
+        }
     };
 
     const handleConfirm = () => {
@@ -1080,169 +1093,153 @@ const RefinementModal = ({ isOpen, onClose, initialData, userPrompt, onConfirm }
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                 >
                     <motion.div
-                        initial={{ scale: 0.95, y: 10, opacity: 0 }}
+                        initial={{ scale: 0.98, y: 10, opacity: 0 }}
                         animate={{ scale: 1, y: 0, opacity: 1 }}
-                        exit={{ scale: 0.95, y: 10, opacity: 0 }}
-                        className="relative w-full max-w-2xl bg-[#121212] rounded-[24px] overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[90vh]"
+                        exit={{ scale: 0.98, y: 10, opacity: 0 }}
+                        className="relative w-full max-w-2xl bg-[#0F0F0F] rounded-[28px] overflow-hidden shadow-2xl border border-white/5 flex flex-col max-h-[85vh]"
                     >
-                        {/* Header */}
-                        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between shrink-0 bg-[#121212]">
+                        {/* Header: More compact M3 Style */}
+                        <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-[#0F0F0F]">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <Wand2 size={18} className="text-blue-500" />
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                    <Sparkles size={20} className="text-blue-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-white font-['Outfit']">Project Setup</h2>
-                                    <p className="text-sm text-slate-400">AI가 최적의 결과를 낼 수 있도록 도와주세요.</p>
+                                    <h2 className="text-lg font-bold text-white tracking-tight">Project Blueprint</h2>
+                                    <p className="text-xs text-slate-500">AI가 설계한 프로젝트 초안을 다듬어보세요.</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-colors">
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 transition-all">
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {/* Scrollable Content */}
-                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-                            {/* 0. Original Request */}
-                            <div className="p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl">
-                                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 block">Original Request</label>
-                                <p className="text-white text-sm font-medium">"{userPrompt}"</p>
+                        {/* Scrollable Content: Reduced padding and spacing */}
+                        <div className="px-8 py-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                            {/* Section 1: Service Definition */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-widest text-[10px]">
+                                    <Layout size={12} /> 1. Service Definition
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">서비스명</label>
+                                        <input
+                                            value={data.serviceName}
+                                            onChange={(e) => handleChange('serviceName', e.target.value)}
+                                            placeholder="예: Sketchon Pay"
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500/40 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">핵심 가치</label>
+                                        <input
+                                            value={data.coreValue}
+                                            onChange={(e) => handleChange('coreValue', e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500/40 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1.5">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">핵심 태스크</label>
+                                        <input
+                                            value={data.coreTask}
+                                            onChange={(e) => handleChange('coreTask', e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500/40 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* 1. Domain */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-sm font-bold text-slate-300">1. Project Type (Domain)</label>
-                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Select One</span>
+                            {/* Section 2: User Strategy */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
+                                    <Users size={12} /> 2. User Strategy
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {OPTIONS.domain.map(opt => (
-                                        <button
-                                            key={opt}
-                                            onClick={() => handleChipSelect('domain', opt)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.domain === opt
-                                                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/50'
-                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
-                                                }`}
-                                        >
-                                            {opt}
-                                        </button>
-                                    ))}
-                                    {/* Custom Input for Domain */}
-                                    <input
-                                        type="text"
-                                        placeholder="Direct Input..."
-                                        value={OPTIONS.domain.includes(data.domain) ? '' : data.domain}
-                                        onChange={(e) => handleChipSelect('domain', e.target.value)}
-                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-blue-500 outline-none min-w-[120px]"
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">타겟 유저</label>
+                                        <input
+                                            value={data.targetUser}
+                                            onChange={(e) => handleChange('targetUser', e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-emerald-500/40 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">해결 방식</label>
+                                        <input
+                                            value={data.solution}
+                                            onChange={(e) => handleChange('solution', e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-emerald-500/40 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">기존의 불편함 (Pain Point)</label>
+                                    <textarea
+                                        value={data.painPoint}
+                                        onChange={(e) => handleChange('painPoint', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500/40 outline-none transition-all min-h-[60px] resize-none"
                                     />
                                 </div>
                             </div>
 
-                            {/* 2. Target */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-sm font-bold text-slate-300">2. Target Audience</label>
-                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Who is it for?</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {OPTIONS.target.map(opt => (
-                                        <button
-                                            key={opt}
-                                            onClick={() => handleChipSelect('target', opt)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.target === opt
-                                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/50'
-                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
-                                                }`}
-                                        >
-                                            {opt}
-                                        </button>
-                                    ))}
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Pet Owners"
-                                        value={OPTIONS.target.includes(data.target) ? '' : data.target}
-                                        onChange={(e) => handleChipSelect('target', e.target.value)}
-                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-emerald-500 outline-none min-w-[120px]"
+                            {/* Section 3: Visual & Tech */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-purple-400 font-bold uppercase tracking-widest text-[10px]">
+                                        <Palette size={12} /> 3. Visuals
+                                    </div>
+                                    <textarea
+                                        value={data.visualStyle}
+                                        onChange={(e) => handleChange('visualStyle', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:border-purple-500/40 outline-none transition-all min-h-[80px] resize-none"
                                     />
                                 </div>
-                            </div>
-
-                            {/* 3. Style */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-sm font-bold text-slate-300">3. Visual Style</label>
-                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Look & Feel</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {OPTIONS.style.map(opt => (
-                                        <button
-                                            key={opt}
-                                            onClick={() => handleChipSelect('style', opt)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${data.style === opt
-                                                ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-900/50'
-                                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:border-white/20'
-                                                }`}
-                                        >
-                                            {opt}
-                                        </button>
-                                    ))}
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Retro"
-                                        value={OPTIONS.style.includes(data.style) ? '' : data.style}
-                                        onChange={(e) => handleChipSelect('style', e.target.value)}
-                                        className="px-4 py-2 rounded-full text-sm bg-transparent border border-white/10 text-white placeholder:text-slate-600 focus:border-purple-500 outline-none min-w-[120px]"
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-widest text-[10px]">
+                                        <Cpu size={12} /> 4. Tech
+                                    </div>
+                                    <textarea
+                                        value={data.techStack}
+                                        onChange={(e) => handleChange('techStack', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-500/40 outline-none transition-all min-h-[80px] resize-none"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Footer: Selected Stack & Action */}
-                        <div className="p-6 border-t border-white/5 bg-[#1a1a1a] shrink-0">
-                            {/* Selected Stack */}
-                            <div className="flex items-center gap-3 mb-6 overflow-x-auto pb-2 scrollbar-none">
-                                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">Selected:</div>
-                                {data.domain && (
-                                    <span className="px-3 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-bold whitespace-nowrap">
-                                        {data.domain}
-                                    </span>
+                        {/* Footer: Action (Dual Buttons M3 Style) */}
+                        <div className="px-8 py-5 border-t border-white/5 bg-[#0F0F0F] flex items-center justify-between shrink-0">
+                            <button
+                                onClick={handleRecommend}
+                                disabled={loading || recommending}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-bold disabled:opacity-50"
+                            >
+                                {recommending ? (
+                                    <RefreshCw size={14} className="animate-spin" />
+                                ) : (
+                                    <Lightbulb size={14} />
                                 )}
-                                {data.target && (
-                                    <span className="px-3 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold whitespace-nowrap">
-                                        {data.target}
-                                    </span>
-                                )}
-                                {data.style && (
-                                    <span className="px-3 py-1 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold whitespace-nowrap">
-                                        {data.style}
-                                    </span>
-                                )}
-                                {(!data.domain && !data.target && !data.style) && (
-                                    <span className="text-slate-600 text-xs italic">Make selections above to optimize AI results</span>
-                                )}
-                            </div>
+                                <span>AI 추천 받기</span>
+                            </button>
 
-                            <Button
+                            <button
                                 onClick={handleConfirm}
-                                disabled={loading}
-                                className="w-full h-14 bg-white text-black hover:bg-slate-200 rounded-xl font-bold text-lg shadow-xl transition-all transform hover:scale-[1.01]"
+                                disabled={loading || recommending}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-white text-black hover:bg-slate-200 rounded-full font-bold text-xs shadow-lg transition-all active:scale-95 disabled:opacity-50"
                             >
                                 {loading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                        <span>Initiating Project...</span>
-                                    </div>
+                                    <RefreshCw size={14} className="animate-spin" />
                                 ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Zap className="fill-black" size={20} />
-                                        <span>Start AI Analysis</span>
-                                    </div>
+                                    <>
+                                        <Zap className="fill-black" size={14} />
+                                        <span>디자인 시작하기</span>
+                                    </>
                                 )}
-                            </Button>
+                            </button>
                         </div>
                     </motion.div>
                 </motion.div>
@@ -1255,6 +1252,7 @@ const ApiSettingsModal = ({ isOpen, onClose }) => {
     const [apiKey, setApiKey] = useState(getGeminiKey() || '');
     const [status, setStatus] = useState('idle'); // 'idle' | 'validating' | 'success' | 'error'
     const [errorMsg, setErrorMsg] = useState('');
+    const [showKey, setShowKey] = useState(false);
 
     const handleSave = () => {
         updateGenAIContent(apiKey);
@@ -1269,23 +1267,29 @@ const ApiSettingsModal = ({ isOpen, onClose }) => {
         }
 
         setStatus('validating');
-        try {
-            const genAIInstance = new GoogleGenerativeAI(apiKey);
-            const model = genAIInstance.getGenerativeModel({ model: "gemini-3-flash-preview" });
-            const result = await model.generateContent("Hello. Just say 'OK'.");
-            const response = await result.response;
-            const text = response.text();
+        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+        let lastError = null;
 
-            if (text) {
-                setStatus('success');
-            } else {
-                throw new Error("Invalid response");
+        for (const modelName of modelsToTry) {
+            try {
+                const genAIInstance = new GoogleGenerativeAI(apiKey);
+                const model = genAIInstance.getGenerativeModel({ model: modelName });
+                const result = await model.generateContent("Hello. Just say 'OK'.");
+                const response = await result.response;
+                const text = response.text();
+
+                if (text) {
+                    setStatus('success');
+                    return;
+                }
+            } catch (err) {
+                console.error(`Validation failed for ${modelName}:`, err);
+                lastError = err;
             }
-        } catch (err) {
-            console.error(err);
-            setStatus('error');
-            setErrorMsg(err.message || '유효하지 않은 API Key입니다.');
         }
+
+        setStatus('error');
+        setErrorMsg(lastError?.message || '유효하지 않은 API Key이거나 네트워크 오류입니다.');
     };
 
     if (!isOpen) return null;
@@ -1319,20 +1323,29 @@ const ApiSettingsModal = ({ isOpen, onClose }) => {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Gemini API Key</label>
                             <div className="relative">
                                 <input
-                                    type="password"
+                                    type={showKey ? "text" : "password"}
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
                                     placeholder="AIzaSy..."
-                                    className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 outline-none transition-all pr-12"
+                                    className="w-full h-12 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-blue-500 outline-none transition-all pr-24"
                                 />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowKey(!showKey)}
+                                        className="text-slate-400 hover:text-white transition-colors"
+                                        title={showKey ? "숨기기" : "보기"}
+                                    >
+                                        {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
                                     {status === 'success' && <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
                                     {status === 'error' && <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />}
                                     {status === 'validating' && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                                 </div>
                             </div>
-                            <p className="mt-2 text-[10px] text-slate-500">
-                                키는 브라우저의 로컬 스토리지에만 안전하게 저장되며 서버로 전송되지 않습니다.
+                            <p className="mt-2 text-[10px] text-slate-500 leading-relaxed">
+                                Gemini 2.0 Flash 모델이 기본 적용됩니다. 키는 브라우저 로컬 저장소에만 안전하게 보관됩니다.
                             </p>
                         </div>
 
@@ -1370,40 +1383,125 @@ const Navbar = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isDrawerOpen, setDrawerOpen] = useState(false);
 
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const [isAppsOpen, setIsAppsOpen] = useState(false);
+
     return (
         <>
             <motion.header
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
-                className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-transparent"
+                className={`fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 h-16 transition-all duration-300 ${isScrolled
+                    ? 'bg-[#000000]/90 backdrop-blur-sm border-b border-white/5 shadow-lg'
+                    : 'bg-transparent'
+                    }`}
             >
-                <div className="flex items-center gap-12">
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <img src={creonLogoWhite} alt="Sketchon" className="h-6 opacity-90 group-hover:opacity-100 transition-opacity" />
+                {/* Left: Logo */}
+                <div className="flex items-center gap-8 z-10">
+                    <Link to="/" className="flex items-center gap-2 group pl-2">
+                        <span className="text-[22px] font-['Outfit'] font-medium text-white tracking-tight text-white/90">Sketchon</span>
                     </Link>
-                    <nav className="hidden md:flex items-center gap-8">
-                        {['Services', 'Showcase', 'About', 'Pricing'].map((item) => (
-                            <a
-                                key={item}
-                                href={`#${item.toLowerCase()}`}
-                                className="text-sm font-medium text-slate-400 hover:text-white transition-colors tracking-tight"
-                            >
-                                {item}
-                            </a>
-                        ))}
-                    </nav>
                 </div>
 
-                <div className="flex items-center gap-4 relative">
-                    {/* [UPDATED] Profile Dropdown Area */}
+                {/* Center: Navigation - Absolute Positioning */}
+                <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-8">
+                    {['Services', 'Showcase', 'About', 'Pricing'].map((item) => (
+                        <a
+                            key={item}
+                            href={`#${item.toLowerCase()}`}
+                            className="text-[14px] font-normal text-[#9aa0a6] hover:text-white transition-colors tracking-wide"
+                        >
+                            {item}
+                        </a>
+                    ))}
+                </nav>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-2 relative pr-2 z-10">
+                    {/* App Launcher (Google Style) */}
                     <div className="relative">
                         <button
-                            onClick={() => setIsProfileOpen(!isProfileOpen)}
-                            className="flex items-center gap-2 pl-2 pr-1 h-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
+                            onClick={() => setIsAppsOpen(!isAppsOpen)}
+                            className={`p-2 transition-colors rounded-full ${isAppsOpen ? 'bg-[#303134] text-white' : 'text-[#9aa0a6] hover:text-white hover:bg-[#303134]'}`}
                         >
-                            <span className="text-xs font-bold text-slate-300 ml-2 group-hover:text-white">Wonhee Cho</span>
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border border-white/20 flex items-center justify-center overflow-hidden">
-                                <CircleUser size={20} className="text-white/80" />
+                            <Grip size={24} strokeWidth={1.5} />
+                        </button>
+
+                        <AnimatePresence>
+                            {isAppsOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setIsAppsOpen(false)} />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 mt-2 w-[340px] bg-[#1e1f20] rounded-[28px] shadow-2xl overflow-hidden z-20 p-6 origin-top-right border border-[#444746]"
+                                    >
+                                        <div className="grid grid-cols-3 gap-y-4 gap-x-2">
+                                            <a href="https://creon.ai" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center p-1">
+                                                    <img src={creonLogoWhite} alt="Creon" className="w-full h-full object-contain drop-shadow-lg" />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Creon</span>
+                                            </a>
+
+                                            {/* Dummy Apps for Grid Layout - Consistent MD3 Style */}
+                                            <div className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center">
+                                                    <BarChart size={32} className="text-[#a8c7fa]" strokeWidth={1.5} />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Analytics</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center">
+                                                    <Users size={32} className="text-[#81c995]" strokeWidth={1.5} />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Teams</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center">
+                                                    <Zap size={32} className="text-[#fdd663]" strokeWidth={1.5} />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Automate</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center">
+                                                    <Settings size={32} className="text-[#ee675c]" strokeWidth={1.5} />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Admin</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2 group cursor-pointer hover:bg-[#303134] rounded-[16px] py-4 transition-colors">
+                                                <div className="w-12 h-12 flex items-center justify-center">
+                                                    <Home size={32} className="text-[#c58af9]" strokeWidth={1.5} />
+                                                </div>
+                                                <span className="text-[13px] font-medium text-[#e8eaed] mt-1">Home</span>
+                                            </div>
+                                        </div>
+
+
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Profile Dropdown Area - Google Style */}
+                    <div className="relative ml-2">
+                        <button
+                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                            className="p-1 rounded-full hover:bg-[#303134] transition-all border border-transparent focus:outline-none"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium ring-2 ring-transparent group-hover:ring-[#303134]">
+                                W
                             </div>
                         </button>
 
@@ -1415,48 +1513,50 @@ const Navbar = () => {
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute right-0 mt-2 w-56 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-20 py-2"
+                                        className="absolute right-0 mt-2 w-[354px] bg-[#1e1f20] rounded-[28px] shadow-2xl overflow-hidden z-20 p-2 origin-top-right border border-[#444746]"
                                     >
-                                        <div className="px-4 py-3 border-b border-white/5 mb-2">
-                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Signed in as</p>
-                                            <p className="text-sm font-medium text-white truncate">wh.cho@creon.ai</p>
+                                        <div className="bg-[#1e1f20] rounded-[20px] pt-4 pb-4 px-2 text-center mb-1 flex flex-col items-center">
+                                            <div className="text-[15px] font-medium text-[#e8eaed] mb-1">Wonhee Cho</div>
+                                            <div className="text-[13px] text-[#9aa0a6]">wh.cho@creon.ai</div>
                                         </div>
 
-                                        <button
-                                            onClick={() => {
-                                                setIsApiModalOpen(true);
-                                                setIsProfileOpen(false);
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                                        >
-                                            <Key size={16} />
-                                            <span>API Configuration</span>
-                                        </button>
+                                        <div className="h-[1px] bg-[#444746] mx-0 my-1"></div>
 
-                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
-                                            <Layout size={16} />
-                                            <span>My Projects</span>
-                                        </button>
+                                        <div className="py-1">
+                                            <button
+                                                onClick={() => {
+                                                    setDrawerOpen(true);
+                                                    setIsProfileOpen(false);
+                                                }}
+                                                className="w-full flex items-center gap-4 px-6 py-3 text-[14px] text-[#e8eaed] hover:bg-[#303134]  transition-colors text-left"
+                                            >
+                                                <Layers size={20} className="text-[#e8eaed]" strokeWidth={1.5} />
+                                                <span>My Projects</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setIsApiModalOpen(true);
+                                                    setIsProfileOpen(false);
+                                                }}
+                                                className="w-full flex items-center gap-4 px-6 py-3 text-[14px] text-[#e8eaed] hover:bg-[#303134] transition-colors text-left"
+                                            >
+                                                <Key size={20} className="text-[#e8eaed]" strokeWidth={1.5} />
+                                                <span>API Configuration</span>
+                                            </button>
+                                            <button className="w-full flex items-center gap-4 px-6 py-3 text-[14px] text-[#e8eaed] hover:bg-[#303134] transition-colors text-left">
+                                                <LogOut size={20} className="text-[#e8eaed]" strokeWidth={1.5} />
+                                                <span>Sign Out</span>
+                                            </button>
+                                        </div>
 
-                                        <div className="h-[1px] bg-white/5 my-2" />
 
-                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                                            <LogOut size={16} />
-                                            <span>Sign Out</span>
-                                        </button>
                                     </motion.div>
                                 </>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    <button
-                        onClick={() => setDrawerOpen(true)}
-                        className="bg-white text-black text-sm font-bold px-5 h-10 rounded-full hover:bg-slate-200 transition-all hidden sm:block"
-                    >
-                        Get Started
-                    </button>
-                    <button className="p-2 text-slate-400 hover:text-white md:hidden">
+                    <button className="p-2 text-[#9aa0a6] hover:text-white md:hidden">
                         <Menu size={24} />
                     </button>
                 </div>
@@ -1477,38 +1577,123 @@ const LandingPage = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [refinementModalOpen, setRefinementModalOpen] = useState(false);
     const [refinementData, setRefinementData] = useState(null);
+    const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
+    const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+    const fileInputRef = useRef(null);
+    const [attachments, setAttachments] = useState([]);
 
-    const handlePromptSubmit = (e) => {
+    const handleImageClick = () => {
+        fileInputRef.current?.click();
+        setIsAttachmentMenuOpen(false);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAttachments([...attachments, { type: 'image', name: file.name }]);
+        }
+    };
+
+    const handleUrlClick = () => {
+        const url = window.prompt("Enter Website URL:");
+        if (url) {
+            setAttachments([...attachments, { type: 'url', value: url }]);
+        }
+        setIsAttachmentMenuOpen(false);
+    };
+
+    const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
+    const [systemPrompt, setSystemPrompt] = useState('Role: 세계적인 수준의 시니어 UI/UX 디자인 전문가\nVisual Style: 2026년 트렌드인 "Layered Depth", "Bento Grid", "Glassmorphism"을 적용하여 입체감 있는 디자인 생성\nGuidelines: Apple과 Google의 디자인 가이드라인을 준수하며, 작동 가능한 고해상도 프리미엄 인터페이스를 React/Tailwind 코드로 구현하라.\nThinking Level: High (레이아웃의 논리적 구조와 사용성을 심도 있게 고려할 것)');
+
+    const TEMPLATES = [
+        { title: 'SaaS Bento Dashboard', content: 'Design a high-fidelity SaaS analytics dashboard using a "Bento Grid" layout. Focus on "Layered Depth" with floating metric cards and a frosted glass navigation bar. Vibrant emerald accents on a deep charcoal background.' },
+        { title: 'Premium E-commerce', content: 'Create a luxury fashion mobile app interface. Visual Style: "Soft Neumorphism" for product cards, "Bento Grid" for categories, and ultra-smooth transitions. Focus on high-res product showcase.' },
+        { title: 'AI Strategic Partner', content: 'Build an interactive AI workspace UI. Features: A central 3D-layered canvas, "Dynamic Island" style notifications, and adaptive components that respond to AI status. Use a futuristic glassmorphism aesthetic.' },
+        { title: 'Fintech Stacked UI', content: 'Design a secure crypto wallet dashboard. Key Elements: "Stacked Layers" for transaction history, sleek bento-style asset overview, and high-contrast accessibility-focused typography.' }
+    ];
+
+    const handlePromptSubmit = async (e) => {
         e.preventDefault();
-        if (prompt.trim()) {
-            // Open modal immediately with default values
+        setIsAnalyzing(true);
+        try {
+            const userRequest = prompt.trim() || "Create a revolutionary premium service";
+            const combinedPrompt = `${systemPrompt}\n\nUser Request: ${userRequest}`;
+            const analysis = await analyzePrompt(combinedPrompt);
+
             setRefinementData({
-                domain: platform === 'mobile' ? "Mobile App" : "Web Service",
-                target: "General Users",
-                style: "Modern & Minimal",
-                explanation: "Configure your project details below."
+                serviceName: analysis.serviceName || "",
+                coreValue: analysis.coreValue || "",
+                coreTask: analysis.coreTask || "",
+                targetUser: analysis.targetUser || "",
+                painPoint: analysis.painPoint || "",
+                solution: analysis.solution || "",
+                hierarchy: analysis.hierarchy || "",
+                visualStyle: analysis.visualStyle || '2026 Trend: Layered Depth, Glassmorphism, Dark Mode',
+                techStack: analysis.techStack || 'React, Tailwind CSS, Framer Motion',
+                explanation: analysis.explanation || "기획 초안이 작성되었습니다. 내용을 확인하고 시작하세요."
             });
             setRefinementModalOpen(true);
+        } catch (error) {
+            console.error("Analysis failed:", error);
+            setRefinementData({
+                serviceName: "New Project",
+                coreValue: "Innovating User Experience",
+                coreTask: prompt,
+                targetUser: "General Users",
+                visualStyle: "Modern & Minimal",
+                techStack: "React, Tailwind",
+                explanation: "분석 중 오류가 발생하여 기본 템플릿을 로드했습니다."
+            });
+            setRefinementModalOpen(true);
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
     const handleRefinementConfirm = (finalData) => {
-        // Construct query params
+        // [Systematic UI Design Prompt Structure]
+        const structuredPrompt = `
+### Service Definition
+Service Name: ${finalData.serviceName}
+Core Value: ${finalData.coreValue}
+Main Task: ${finalData.coreTask}
+
+### User Persona & Pain Point
+Target User: ${finalData.targetUser}
+Pain Point: ${finalData.painPoint}
+Solution Strategy: ${finalData.solution}
+
+### Component Hierarchy
+Hierarchy: ${finalData.hierarchy}
+
+### Visual Aesthetics
+Aesthetics: ${finalData.visualStyle}
+
+### Technical Constraints
+Constraints: ${finalData.techStack}
+        `.trim();
+
         const params = new URLSearchParams();
-        params.append('q', prompt);
+        params.append('q', structuredPrompt);
+        params.append('sys', systemPrompt);
         params.append('platform', platform);
-        params.append('domain', finalData.domain);
-        params.append('target', finalData.target);
-        params.append('style', finalData.style);
+        params.append('service', finalData.serviceName);
+        params.append('task', finalData.coreTask);
+        params.append('style', finalData.visualStyle);
+        params.append('model', selectedModel);
 
         navigate(`/generate?${params.toString()}`);
     };
+
+
 
     return (
         <div className="relative w-full text-white bg-[#000000] selection:bg-[#0070ff]/40">
             <ParticleEngine scrollYProgress={scrollYProgress} />
             <Navbar />
             <ScrollToTop />
+
 
 
             {/* Hero Section (Phase 0) */}
@@ -1541,7 +1726,7 @@ const LandingPage = () => {
 
                     <form onSubmit={handlePromptSubmit} className="w-full max-w-xl relative group mb-10">
                         {/* Prompt Input Area - Framer/Glass style */}
-                        <div className="bg-black/85 border border-white/10 rounded-[24px] p-5 transition-all duration-500 group-focus-within:border-blue-500/50 shadow-2xl">
+                        <div className={`bg-black/85 border border-white/10 rounded-[24px] p-5 transition-all duration-500 group-focus-within:ring-2 ${platform === 'mobile' ? 'group-focus-within:border-blue-500/50 group-focus-within:ring-blue-500/20' : 'group-focus-within:border-emerald-500/50 group-focus-within:ring-emerald-500/20'} shadow-2xl`}>
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
@@ -1549,33 +1734,153 @@ const LandingPage = () => {
                                 className="w-full bg-transparent border-none outline-none text-white/80 placeholder:text-white/30 text-[18px] font-light resize-none leading-relaxed h-16 mb-1 scrollbar-none"
                             />
 
+                            {/* Attachment Chips */}
+                            {attachments.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {attachments.map((att, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[12px] text-white/70">
+                                            {att.type === 'image' ? <Image size={12} /> : <Globe size={12} />}
+                                            <span className="truncate max-w-[100px]">{att.name || att.value}</span>
+                                            <button
+                                                onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
+                                                className="hover:text-white transition-colors"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="hidden"
+                                accept="image/*"
+                            />
+
                             <div className="flex items-center justify-between">
-                                <div className="flex bg-white/5 rounded-full p-1 gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPlatform('mobile')}
-                                        className={`px-4 py-2 rounded-full text-[11px] font-bold transition-all flex items-center gap-2 ${platform === 'mobile' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                                    >
-                                        <Smartphone size={14} /> APP
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPlatform('web')}
-                                        className={`px-4 py-2 rounded-full text-[11px] font-bold transition-all flex items-center gap-2 ${platform === 'web' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                                    >
-                                        <Monitor size={14} /> WEB
-                                    </button>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+                                            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/5"
+                                        >
+                                            <Plus size={16} />
+                                        </button>
+                                        <AnimatePresence>
+                                            {isAttachmentMenuOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-10" onClick={() => setIsAttachmentMenuOpen(false)} />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        className="absolute bottom-full left-0 mb-2 w-48 bg-[#1e1f20] rounded-xl shadow-2xl border border-[#444746] overflow-hidden z-20"
+                                                    >
+                                                        <button
+                                                            onClick={handleImageClick}
+                                                            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-[#e8eaed] hover:bg-[#303134] transition-colors text-left"
+                                                        >
+                                                            <Image size={16} className="text-[#9aa0a6]" />
+                                                            <span>Upload Image</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={handleUrlClick}
+                                                            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-[#e8eaed] hover:bg-[#303134] transition-colors text-left"
+                                                        >
+                                                            <Globe size={16} className="text-[#9aa0a6]" />
+                                                            <span>Website URL</span>
+                                                        </button>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+
+
+                                    <div className="flex bg-white/5 rounded-full p-1 gap-1 h-8">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPlatform('mobile')}
+                                            className={`px-3 flex items-center gap-2 rounded-full text-[10px] font-bold transition-all ${platform === 'mobile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-white'}`}
+                                        >
+                                            <Smartphone size={12} /> APP
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPlatform('web')}
+                                            className={`px-3 flex items-center gap-2 rounded-full text-[10px] font-bold transition-all ${platform === 'web' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-500 hover:text-white'}`}
+                                        >
+                                            <Monitor size={12} /> WEB
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-3">
+                                    {/* Model Selection Dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
+                                            className="h-8 px-3 rounded-full bg-white/5 hover:bg-white/10 flex items-center gap-2 text-[11px] font-bold text-slate-400 hover:text-white transition-all border border-white/5"
+                                        >
+                                            {selectedModel}
+                                            <ChevronDown size={12} className={`transition-transform duration-300 ${isModelMenuOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isModelMenuOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-10" onClick={() => setIsModelMenuOpen(false)} />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        className="absolute bottom-full right-0 mb-2 w-40 bg-[#1e1f20] rounded-xl shadow-2xl border border-[#444746] overflow-hidden z-20"
+                                                    >
+                                                        {['Gemini 2.0 Flash', 'Gemini 1.5 Pro', 'Gemini 1.5 Flash', 'Gemini 2.0 Pro Exp'].map((model) => (
+                                                            <button
+                                                                key={model}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedModel(model);
+                                                                    setIsModelMenuOpen(false);
+                                                                }}
+                                                                className={`w-full px-4 py-2 text-left text-[12px] transition-colors ${selectedModel === model ? (platform === 'mobile' ? 'bg-blue-600/20 text-blue-400 font-bold' : 'bg-emerald-600/20 text-emerald-400 font-bold') : 'text-[#e8eaed] hover:bg-[#303134]'}`}
+                                                            >
+                                                                {model}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsTemplatePanelOpen(true)}
+                                        className="w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                                    >
+                                        <Info size={16} />
+                                    </button>
+
                                     <motion.button
                                         type="submit"
-                                        disabled={isAnalyzing || !prompt.trim()}
-                                        whileHover={prompt.trim() ? { scale: 1.05 } : {}}
-                                        whileTap={prompt.trim() ? { scale: 0.95 } : {}}
-                                        className={`h-10 w-10 rounded-full flex items-center justify-center p-0 shadow-xl transition-all duration-300 ${prompt.trim() ? 'bg-blue-600 text-white shadow-blue-500/20' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
+                                        disabled={isAnalyzing}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`h-8 w-8 rounded-full flex items-center justify-center p-0 shadow-xl transition-all duration-300 ${isAnalyzing ? (platform === 'mobile' ? 'bg-blue-600/50' : 'bg-emerald-600/50') : (platform === 'mobile' ? 'bg-blue-600 text-white shadow-blue-500/20' : 'bg-emerald-600 text-white shadow-emerald-500/20')}`}
                                     >
-                                        <ArrowRight size={18} />
+                                        {isAnalyzing ? (
+                                            <RefreshCw size={14} className="animate-spin text-white" />
+                                        ) : (
+                                            <ArrowRight size={16} />
+                                        )}
                                     </motion.button>
                                 </div>
                             </div>
@@ -1607,12 +1912,12 @@ const LandingPage = () => {
                         <ChevronDown size={16} />
                     </div>
                 </motion.div>
-            </Section>
+            </Section >
 
             {/* Feature Showcase 2.0: Interactive Scroll Journey - IMMEDIATELY after Hero */}
-            <div className="relative">
+            < div className="relative" >
                 {/* Feature 1: Strategic Intelligence */}
-                <Section className="z-10 min-h-screen">
+                < Section className="z-10 min-h-screen" >
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
@@ -1641,10 +1946,10 @@ const LandingPage = () => {
                             {/* Particles form Neural Grid shape */}
                         </div>
                     </div>
-                </Section>
+                </Section >
 
                 {/* Feature 2: Visual Benchmarking */}
-                <Section className="z-10 min-h-screen">
+                < Section className="z-10 min-h-screen" >
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
                         <div className="relative aspect-square overflow-hidden order-2 md:order-1">
                             {/* Particles form UI Focus shape */}
@@ -1673,10 +1978,10 @@ const LandingPage = () => {
                             </div>
                         </motion.div>
                     </div>
-                </Section>
+                </Section >
 
                 {/* Feature 3: Experience Logic */}
-                <Section className="z-10 min-h-screen">
+                < Section className="z-10 min-h-screen" >
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
@@ -1685,7 +1990,7 @@ const LandingPage = () => {
                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                             className="relative group mt-0"
                         >
-                            <div className="absolute -inset-8 bg-gradient-to-br from-orange-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
                             <div className="relative p-0 bg-transparent">
                                 <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 3. EXPERIENCE LOGIC</span>
                                 <h2 className="text-5xl md:text-[62px] font-['Outfit'] font-medium tracking-[-0.05em] mb-10 leading-[1.0] text-white">
@@ -1705,10 +2010,10 @@ const LandingPage = () => {
                             {/* Particles form Heatmap shape */}
                         </div>
                     </div>
-                </Section>
+                </Section >
 
                 {/* Feature 4: The Winning Delivery */}
-                <Section className="z-10 min-h-screen">
+                < Section className="z-10 min-h-screen" >
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
                         <div className="relative aspect-square overflow-hidden order-2 md:order-1">
                             {/* Particles form Solid Stacks shape */}
@@ -1737,11 +2042,11 @@ const LandingPage = () => {
                             </div>
                         </motion.div>
                     </div>
-                </Section>
-            </div>
+                </Section >
+            </div >
 
             {/* Section: Social Proof (Infinite Slider) - Moved here */}
-            <div className="relative z-10 py-24 bg-black/50 backdrop-blur-sm border-y border-white/5 overflow-hidden">
+            < div className="relative z-10 py-24 bg-black/50 backdrop-blur-sm border-y border-white/5 overflow-hidden" >
                 <div className="max-w-7xl mx-auto px-6 mb-12 text-center">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em]">Trusted by Forward-Thinking Teams</p>
                 </div>
@@ -1757,10 +2062,10 @@ const LandingPage = () => {
                         </div>
                     ))}
                 </div>
-            </div>
+            </div >
 
             {/* Section 7: Bento Grid (Core Capabilities) */}
-            <section className="relative z-10 py-32 px-6 bg-black">
+            < section className="relative z-10 py-32 px-6 bg-black" >
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-20">
                         <span className="text-blue-500 font-bold tracking-[0.3em] text-[10px] mb-6 block uppercase">Capability</span>
@@ -1802,10 +2107,10 @@ const LandingPage = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Section 8: Interactive Demo (Simplified Visual) */}
-            <section className="relative z-10 py-32 px-6 bg-black overflow-hidden">
+            < section className="relative z-10 py-32 px-6 bg-black overflow-hidden" >
                 <div className="max-w-6xl mx-auto bg-[#0a0a0a] border border-white/10 rounded-[3rem] p-1 overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)]">
                     <div className="bg-black/40 rounded-[2.8rem] p-12 md:p-20 text-center relative">
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
@@ -1823,10 +2128,10 @@ const LandingPage = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Section 9: Testimonials */}
-            <section className="relative z-10 py-32 px-6 bg-black">
+            < section className="relative z-10 py-32 px-6 bg-black" >
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-3 gap-8">
                         {[
@@ -1847,10 +2152,10 @@ const LandingPage = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Section 10: Final Showcase (Gallery) */}
-            <section className="relative z-10 py-32 px-6 bg-black">
+            < section className="relative z-10 py-32 px-6 bg-black" >
                 <div className="max-w-7xl mx-auto text-center">
                     <h2 className="text-5xl md:text-7xl font-['Outfit'] font-bold mb-20 tracking-tighter">Crafted with <span className="text-white/30">Sketchon.</span></h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1861,15 +2166,15 @@ const LandingPage = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Section: Feature Summary / Capability (Bento) */}
-            <section className="relative z-10 py-32 px-6 bg-black">
+            < section className="relative z-10 py-32 px-6 bg-black" >
                 {/* ... existing bento code ... */}
-            </section>
+            </section >
 
             {/* Section: Problem (Chaos to Clarity) - Now after features to explain WHY they matter */}
-            <Section className="z-10 min-h-screen overflow-hidden">
+            < Section className="z-10 min-h-screen overflow-hidden" >
                 <div className="max-w-4xl text-center">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -1894,10 +2199,10 @@ const LandingPage = () => {
                         </p>
                     </motion.div>
                 </div>
-            </Section>
+            </Section >
 
             {/* Section: Final CTA */}
-            <section className="relative z-10 py-40 px-6 bg-black">
+            < section className="relative z-10 py-40 px-6 bg-black" >
                 <div className="max-w-4xl mx-auto text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -1910,10 +2215,10 @@ const LandingPage = () => {
                         </div>
                     </motion.div>
                 </div>
-            </section>
+            </section >
 
             {/* Footer */}
-            <footer className="relative py-20 border-t border-white/10 bg-black mt-20 z-10">
+            < footer className="relative py-20 border-t border-white/10 bg-black mt-20 z-10" >
                 <div className="max-w-4xl mx-auto text-center px-6">
                     <h3 className="text-3xl font-['Outfit'] font-bold mb-6 text-white">Ready to Build?</h3>
                     <p className="text-slate-400 mb-8">지금 바로 Sketchon과 함께 제안의 퀄리티를 높여보세요.</p>
@@ -1926,7 +2231,9 @@ const LandingPage = () => {
                         <a href="#" className="hover:text-slate-300">Contact</a>
                     </div>
                 </div>
-            </footer>
+            </footer >
+
+
 
             <RefinementModal
                 isOpen={refinementModalOpen}
@@ -1935,6 +2242,78 @@ const LandingPage = () => {
                 userPrompt={prompt}
                 onConfirm={handleRefinementConfirm}
             />
+
+            {/* Prompt Template Side Panel */}
+            <AnimatePresence>
+                {isTemplatePanelOpen && (
+                    <motion.div
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="fixed top-0 right-0 h-full w-[400px] bg-[#121212] border-l border-white/10 z-[201] flex flex-col shadow-2xl"
+                    >
+                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                    <Book size={16} className="text-emerald-500" />
+                                </div>
+                                <h3 className="font-bold text-white font-['Outfit']">Prompt Library</h3>
+                            </div>
+                            <button onClick={() => setIsTemplatePanelOpen(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 flex-1 overflow-y-auto space-y-8 scrollbar-none">
+                            {/* System Base Prompt Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <Sparkles size={12} className="text-emerald-500" /> Base System Prompt
+                                    </label>
+                                </div>
+                                <textarea
+                                    value={systemPrompt}
+                                    onChange={(e) => setSystemPrompt(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-slate-300 min-h-[120px] focus:border-emerald-500/50 outline-none transition-all resize-none font-light leading-relaxed"
+                                    placeholder="Enter base instructions for the AI..."
+                                />
+                                <p className="text-[10px] text-slate-600">이 프롬프트는 사용자의 입력값 앞에 자동으로 추가되어 AI의 전체적인 톤앤매너를 결정합니다.</p>
+                            </div>
+
+                            {/* Templates List */}
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Recommended Templates</label>
+                                <div className="space-y-3">
+                                    {TEMPLATES.map((tmpl, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setPrompt(tmpl.content);
+                                                setIsTemplatePanelOpen(false);
+                                            }}
+                                            className="w-full p-4 bg-white/5 border border-white/5 rounded-2xl text-left hover:bg-white/10 hover:border-white/20 transition-all group"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{tmpl.title}</span>
+                                                <ClipboardCopy size={14} className="text-slate-600 group-hover:text-white" />
+                                            </div>
+                                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{tmpl.content}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-white/[0.02] border-t border-white/5">
+                            <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                                Tip: 템플릿을 선택하면 입력창에 자동으로 채워지며, 상단의 Base Prompt와 결합되어 더욱 정교한 결과물을 만들어냅니다.
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

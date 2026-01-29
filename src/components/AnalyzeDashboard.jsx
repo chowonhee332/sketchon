@@ -38,11 +38,12 @@ const Card = ({ children, className = "" }) => (
 );
 
 const AnalyzeDashboard = ({ projectTitle, messages = [], selectedSection = 'all', analysisData = null, selectedModules = [], onToggleModule = () => { }, onSendToDelivery = () => { } }) => {
-    const [isAnalyzing, setIsAnalyzing] = useState(true);
-    const [progress, setProgress] = useState(0);
-    const [statusText, setStatusText] = useState("Initializing AI Synthesis...");
+    const [isAnalyzing, setIsAnalyzing] = useState(!analysisData);
+    const [progress, setProgress] = useState(analysisData ? 100 : 0);
+    const [statusText, setStatusText] = useState(analysisData ? "Analysis Complete" : "Initializing AI Synthesis...");
 
     useEffect(() => {
+        if (analysisData) return;
         const steps = [
             { p: 10, t: "Connecting to Global Search (Google, Naver)..." },
             { p: 30, t: "Crawling Domain Trends & Competitor Data..." },

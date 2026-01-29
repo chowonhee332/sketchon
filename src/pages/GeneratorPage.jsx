@@ -8,7 +8,7 @@ import ProjectInputModal from '../components/ProjectInputModal';
 import AnalysisProgress from '../components/AnalysisProgress';
 import { v0 } from '../lib/gemini';
 import { generateModularAnalysis, buildUIPrompt } from '../lib/unifiedArchitect';
-import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, PanelLeftClose, PanelLeftOpen, Edit3, CircleUser, Layout, Compass, Target, Users, Layers } from 'lucide-react';
+import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, PanelLeftClose, PanelLeftOpen, Edit3, CircleUser, Layout, Compass, Target, Users, Layers, Settings, HelpCircle, Plus, Search, ExternalLink, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import creonLogo from '../assets/creon-logo.png';
 import creonLogoWhite from '../assets/creon-logo-white.png';
@@ -22,7 +22,7 @@ const GeneratorPage = () => {
     });
     const [generatedCode, setGeneratedCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [currentModel, setCurrentModel] = useState('gemini-3-pro-preview');
+    const [currentModel, setCurrentModel] = useState('Gemini 3 Pro');
     const [deviceType, setDeviceType] = useState('mobile'); // 'mobile' | 'web'
     const [activeTab, setActiveTab] = useState('ui');
     const [viewMode, setViewMode] = useState('desktop');
@@ -44,7 +44,7 @@ const GeneratorPage = () => {
 
     const [projectTitle, setProjectTitle] = useState('Untitled Project');
     const hasInitialLoaded = React.useRef(false);
-    const [panelWidth, setPanelWidth] = useState(600);
+    const [panelWidth, setPanelWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
     const [projectId, setProjectId] = useState(null);
 
@@ -141,39 +141,34 @@ const GeneratorPage = () => {
     // AI Analysis Handlers
     const handleAnalysisSubmit = async (userInput) => {
         try {
+            setIsLoading(true);
             setAnalysisStatus('analyzing');
             setAnalysisProgress({ current: 0, total: 5 });
 
-            // Simulate progress updates (in real implementation, this would be based on actual API progress)
-            const progressInterval = setInterval(() => {
-                setAnalysisProgress(prev => {
-                    if (prev.current < prev.total) {
-                        return { ...prev, current: prev.current + 1 };
-                    }
-                    return prev;
-                });
-            }, 3000);
-
-            // Generate modular analysis
+            // Generate modular analysis (Background)
             const result = await generateModularAnalysis(userInput);
 
-            clearInterval(progressInterval);
             setAnalysisProgress({ current: 5, total: 5 });
             setAnalysisData(result);
             setAnalysisStatus('complete');
 
-            // Auto-switch to Analyze tab to show results
-            setActiveTab('research');
+            // Stay on Visualize tab (don't switch to research)
+            setActiveTab('ui');
 
-            // Optionally generate UI based on Implementation module
+            // Auto-trigger UI generation based on Analysis Results
             if (result.implementation?.uiConcept) {
                 const uiPrompt = buildUIPrompt(result.implementation.uiConcept);
-                // You can auto-trigger UI generation here or let user do it manually
-                console.log('UI Prompt ready:', uiPrompt);
+                await handleSendMessage(uiPrompt, currentModel);
+            } else {
+                // Fallback: use query if analysis fails to provide a uiConcept
+                const searchParams = new URLSearchParams(location.search);
+                const query = searchParams.get('q');
+                if (query) await handleSendMessage(query, currentModel);
             }
         } catch (error) {
             console.error('Analysis error:', error);
             setAnalysisStatus('idle');
+            setIsLoading(false);
             alert(`분석 중 오류가 발생했습니다.\n\n오류 상세: ${error.message || error}`);
         }
     };
@@ -184,8 +179,10 @@ const GeneratorPage = () => {
         const query = searchParams.get('q');
         const id = searchParams.get('id');
         const platform = searchParams.get('platform');
+        const model = searchParams.get('model');
 
         if (platform) setDeviceType(platform);
+        if (model) setCurrentModel(model);
 
         // If it's a different project than current one, or if it's the first load
         if (id && id !== projectId) {
@@ -209,19 +206,20 @@ const GeneratorPage = () => {
 
                 // [MODIFIED] Auto-start Modular Analysis based on query & params
                 if (query) {
-                    const domain = searchParams.get('domain');
-                    const target = searchParams.get('target');
+                    const serviceName = searchParams.get('service');
+                    const coreTask = searchParams.get('task');
                     const style = searchParams.get('style');
+                    const systemPrompt = searchParams.get('sys');
 
-                    setProjectTitle(query.length > 20 ? query.substring(0, 20) + '...' : query);
+                    setProjectTitle(serviceName || (query.length > 20 ? query.substring(0, 20) + '...' : query));
 
                     // Directly trigger analysis with DETAILED context
                     handleAnalysisSubmit({
                         keyword: query,
-                        projectType: domain || (platform === 'mobile' ? 'Mobile App' : 'Web Service'),
-                        targetUser: target || 'General Users',
-                        goals: `Successful Project Launch with ${style || 'Modern'} style`,
-                        notes: `Visual Style: ${style || 'Modern'}. Generated from Landing Input.`
+                        projectType: serviceName || (platform === 'mobile' ? 'Mobile App' : 'Web Service'),
+                        targetUser: 'Extracted from Blueprint',
+                        goals: coreTask || `Successful Project Launch`,
+                        notes: `${systemPrompt ? `[Expert Persona]: ${systemPrompt}. ` : ''}Visual Style: ${style || 'Premium'}.`
                     });
                 }
             }
@@ -301,11 +299,11 @@ const GeneratorPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-white overflow-hidden font-['Inter']">
+        <div className="flex flex-col h-screen bg-[#0A0A0A] overflow-hidden font-['Inter']">
             {/* Header - Dark Mode */}
             {/* Header - Toss Dark Mode */}
-            <header className="h-14 border-b border-[#333D4B] flex items-center justify-between bg-[#1B1C1D] z-20 text-white pl-0 pr-4">
-                <div className="flex items-center h-full border-r border-[#333D4B] px-4 gap-3 w-[380px] shrink-0 transition-all duration-300 ease-in-out">
+            <header className="h-14 flex items-center justify-between bg-[#0A0A0A] z-20 text-white pl-0 pr-4">
+                <div className="flex items-center h-full px-4 gap-3 w-[280px] shrink-0 transition-all duration-300 ease-in-out">
                     <Link to="/" className="text-slate-400 hover:text-white shrink-0 p-2 hover:bg-white/10 rounded-md transition-colors">
                         <ChevronLeft size={20} />
                     </Link>
@@ -358,37 +356,33 @@ const GeneratorPage = () => {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-4 pr-4">
-                    {/* Creon Logo Button */}
-                    <button
-                        className="relative group focus:outline-none transition-all duration-200"
-                        onClick={() => setIsCreonModalOpen(!isCreonModalOpen)}
-                    >
-                        <div className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${isCreonModalOpen ? 'bg-blue-500 text-white shadow-blue-500/50 shadow-lg' : 'hover:scale-110'}`}>
-                            <img
-                                src={isCreonModalOpen ? creonLogoWhite : creonLogo}
-                                alt="Creon"
-                                className={`object-contain transition-all duration-200 ${isCreonModalOpen ? 'w-6 h-6' : 'w-full h-full p-0.5 opacity-90'}`}
-                            />
-                        </div>
+                <div className="flex items-center gap-2 pr-4">
+                    {/* Help Icon */}
+                    <button className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
+                        <HelpCircle size={20} />
+                    </button>
+
+                    {/* Settings Icon */}
+                    <button className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
+                        <Settings size={20} />
                     </button>
 
                     {/* Profile Icon */}
-                    <button className="relative group focus:outline-none transition-transform hover:scale-105">
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-sm shadow-lg">
-                            U
+                    <button className="relative group focus:outline-none transition-transform hover:scale-105 ml-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium shadow-lg">
+                            W
                         </div>
                     </button>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar - Toss Dark Mode */}
+            <main className="flex-1 flex overflow-hidden bg-[#0A0A0A] p-2 gap-2">
+                {/* Left Sidebar Card */}
                 <div
-                    className={`flex-shrink-0 bg-[#1B1C1D] border-r border-[#333D4B] transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[380px]' : 'w-0 border-r-0 overflow-hidden'}`}
+                    className={`flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'}`}
                 >
-                    <div className="w-[380px] h-full"> {/* Inner container to maintain width during animation */}
+                    <div className="w-[280px] h-full bg-[#161618] rounded-2xl overflow-hidden shadow-xl">
                         <ChatSidebar
                             messages={messages[activeTab] || []}
                             onSendMessage={(msg, model, attachments) => handleSendMessage(msg, model, undefined, attachments)}
@@ -402,15 +396,16 @@ const GeneratorPage = () => {
                                 setSelectedArea(null);
                             }}
                             onStartAnalysis={() => setIsInputModalOpen(true)}
+                            onToggleSidebar={() => setIsSidebarOpen(false)}
                         />
                     </div>
                 </div>
 
-                {/* Main Content Area (Tabs) */}
-                <div className="flex-1 min-w-0 bg-[#1B1C1D] relative flex flex-col overflow-hidden">
+                {/* Main Content Area Card */}
+                <div className="flex-1 min-w-0 bg-[#161618] rounded-2xl border border-white/5 shadow-xl relative flex flex-col overflow-hidden">
                     {/* Sub Tab Navigation for Analyze */}
                     {activeTab === 'research' && (
-                        <div className="flex items-center gap-6 px-8 py-3 bg-[#1B1C1D] border-b border-[#333D4B] overflow-x-auto scrollbar-hide shrink-0 z-10 transition-all duration-300">
+                        <div className="flex items-center gap-6 px-8 py-3 bg-[#161618] border-b border-[#333D4B] overflow-x-auto scrollbar-hide shrink-0 z-10 transition-all duration-300">
                             {[
                                 { id: 'all', label: 'Overall', icon: Layout },
                                 { id: 'guide', label: '1. Guide', icon: Compass },
@@ -452,57 +447,52 @@ const GeneratorPage = () => {
                         )}
 
                         <div className={`w-full h-full flex flex-col ${activeTab === 'ui' ? 'block' : 'hidden'}`}>
-                            {/* Canvas Controls (Lifted to Bottom-Left) */}
                             {/* Canvas Controls (Bottom-Left) */}
                             {activeTab === 'ui' && (
-                                <div className="absolute bottom-6 left-6 z-[60] flex items-end gap-2">
-                                    {/* Responsive Controls */}
-                                    <div className="flex items-center gap-1 p-1 bg-[#1e1e1e]/90 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl">
+                                <div className="absolute bottom-8 left-8 z-[60] flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5 p-1.5 bg-[#1e1e1e]/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
                                         <button
                                             onClick={() => {
                                                 setViewMode('desktop');
                                                 setDeviceType('web');
                                             }}
-                                            className={`p-2 rounded-md transition-all ${viewMode === 'desktop' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                            className={`p-2 rounded-xl transition-all ${viewMode === 'desktop' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                         >
-                                            <Monitor size={16} />
+                                            <Monitor size={18} />
                                         </button>
                                         <button
                                             onClick={() => {
                                                 setViewMode('tablet');
                                                 setDeviceType('web');
                                             }}
-                                            className={`p-2 rounded-md transition-all ${viewMode === 'tablet' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                            className={`p-2 rounded-xl transition-all ${viewMode === 'tablet' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                         >
-                                            <Tablet size={16} />
+                                            <Tablet size={18} />
                                         </button>
                                         <button
                                             onClick={() => {
                                                 setViewMode('mobile');
                                                 setDeviceType('mobile');
                                             }}
-                                            className={`p-2 rounded-md transition-all ${viewMode === 'mobile' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                            className={`p-2 rounded-xl transition-all ${viewMode === 'mobile' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                         >
-                                            <Smartphone size={16} />
+                                            <Smartphone size={18} />
                                         </button>
                                     </div>
 
-                                    {/* Expandable Color Picker */}
                                     <div className="relative group">
-                                        {/* Expanded Colors (Show on hover/group-focus or click) - Using CSS group-hover for simplicity or state */}
-                                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#1e1e1e]/90 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl flex flex-col gap-2 transition-all duration-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0">
+                                        <div className="absolute bottom-full left-0 mb-3 p-2 bg-[#1e1e1e]/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl flex flex-col gap-2 transition-all duration-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0">
                                             {['#ffffff', '#f5f5f5', '#e5e5e5', '#1a1a1a'].map(color => (
                                                 <button
                                                     key={color}
                                                     onClick={() => setBgColor(color)}
-                                                    className={`w-5 h-5 rounded-full border border-white/10 shadow-sm transition-transform hover:scale-110 ${bgColor === color ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#1e1e1e]' : ''}`}
+                                                    className={`w-6 h-6 rounded-full border border-white/10 shadow-sm transition-transform hover:scale-110 ${bgColor === color ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#1e1e1e]' : ''}`}
                                                     style={{ backgroundColor: color }}
                                                 />
                                             ))}
                                         </div>
 
-                                        {/* Trigger Button (Current Color) */}
-                                        <div className="p-2 bg-[#1e1e1e]/90 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl cursor-pointer">
+                                        <div className="p-2.5 bg-[#1e1e1e]/90 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl cursor-pointer hover:bg-white/5 transition-all">
                                             <div
                                                 className="w-5 h-5 rounded-full border border-white/10 shadow-sm"
                                                 style={{ backgroundColor: bgColor }}
@@ -514,7 +504,7 @@ const GeneratorPage = () => {
 
                             <PreviewCanvas
                                 code={generatedCode}
-                                deviceType={deviceType} // Note: Keeping code logic, but might want to sync with viewMode eventually
+                                deviceType={deviceType}
                                 viewMode={viewMode}
                                 bgColor={bgColor}
                                 onSelectArtboard={setSelectedArtboard}
@@ -526,95 +516,92 @@ const GeneratorPage = () => {
                         </div>
                     </div>
                 </div>
-            </main >
-            {/* Rename Modal */}
-            {isRenameModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-[#2C2C2E] border border-[#333D4B] rounded-[24px] p-8 w-[400px] shadow-2xl">
-                        <h3 className="text-lg font-bold text-white mb-4">Rename Project</h3>
-                        <input
-                            autoFocus
-                            type="text"
-                            value={tempTitle}
-                            onChange={(e) => setTempTitle(e.target.value)}
-                            className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-blue-500"
-                            placeholder="Enter project name"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    setProjectTitle(tempTitle);
-                                    setIsRenameModalOpen(false);
-                                }
-                            }}
-                        />
-                        <div className="flex justify-end gap-3">
-                            <Button
-                                variant="ghost"
-                                className="text-slate-400 hover:text-white"
-                                onClick={() => setIsRenameModalOpen(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-blue-600 hover:bg-blue-500 text-white"
-                                onClick={() => {
-                                    setProjectTitle(tempTitle);
-                                    setIsRenameModalOpen(false);
-                                }}
-                            >
-                                Save Changes
-                            </Button>
+
+                {/* Creon Service Side Panel Card */}
+                <div
+                    className={`flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out z-30`}
+                    style={{ width: isCreonModalOpen ? `${panelWidth}px` : '0px', overflow: 'hidden' }}
+                >
+                    <div className="flex-1 flex flex-col bg-white overflow-hidden rounded-2xl shadow-xl border border-white/5 h-full">
+                        {/* Panel Header */}
+                        <div className="px-5 py-3 flex items-center justify-between bg-white border-b border-gray-100">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest leading-none mb-1">CREON</span>
+                                <span className="text-sm font-bold text-gray-800">Resources</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                                    <Search size={18} />
+                                </button>
+                                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                                    <ExternalLink size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setIsCreonModalOpen(false)}
+                                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Panel Content (Iframe) */}
+                        <div className="flex-1 relative bg-white">
+                            {isCreonModalOpen && (
+                                <iframe
+                                    src="https://creon-umber.vercel.app/"
+                                    title="Creon Service"
+                                    className={`w-full h-full border-none ${isResizing ? 'pointer-events-none' : ''}`}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                />
+                            )}
+
+                            {/* Resize Handle (Google Style) */}
+                            {isCreonModalOpen && (
+                                <div
+                                    className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-50"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setIsResizing(true);
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
-            )}
-            {/* Creon Service Right Panel */}
-            {/* Creon Service Right Panel */}
-            <div
-                className={`fixed top-[57px] bottom-0 right-0 z-[100] bg-[#1a1a1a] border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isCreonModalOpen ? 'translate-x-0' : 'translate-x-full'}`}
-                style={{ width: isCreonModalOpen ? `${panelWidth}px` : '0px' }}
-            >
-                {/* Resize Handle - Only for Web Mode (Responsive Testing) */}
-                {deviceType === 'web' && (
-                    <div
-                        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize transition-colors z-50"
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            setIsResizing(true);
-                        }}
-                    />
-                )}
 
-                {/* Iframe Content - No Header */}
-                <div className="flex-1 bg-white relative">
-                    {isCreonModalOpen && (
-                        <iframe
-                            src="https://creon-umber.vercel.app/"
-                            title="Creon Service"
-                            className={`w-full h-full border-none ${isResizing ? 'pointer-events-none' : ''}`}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        />
-                    )}
+                {/* Right Companion Sidebar */}
+                <div className="w-[48px] flex-shrink-0 flex flex-col items-center py-4 gap-4 z-20 bg-[#0A0A0A]">
+                    <div className="flex flex-col items-center gap-2 w-full">
+                        {/* Third Party Icons (Creon placeholders) */}
+                        {[1, 2, 3, 4].map((i) => (
+                            <button
+                                key={i}
+                                onClick={() => setIsCreonModalOpen(!isCreonModalOpen)}
+                                className={`w-9 h-9 rounded-xl overflow-hidden hover:scale-110 transition-all p-2 flex items-center justify-center group ${isCreonModalOpen && i === 1 ? 'bg-white/10 ring-2 ring-blue-500' : 'bg-transparent'}`}
+                            >
+                                <img src={creonLogo} alt={`Creon ${i}`} className={`w-full h-full object-contain transition-opacity ${isCreonModalOpen && i === 1 ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="w-6 h-[1px] bg-white/5 my-2" />
+
+                    <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 transition-all">
+                        <Plus size={18} />
+                    </button>
                 </div>
-            </div>
+            </main>
 
             {/* Project Input Modal */}
-            <ProjectInputModal
+            < ProjectInputModal
                 isOpen={isInputModalOpen}
                 onClose={() => setIsInputModalOpen(false)}
                 onSubmit={handleAnalysisSubmit}
                 initialKeyword=""
             />
 
-            {/* Analysis Progress Overlay */}
-            {analysisStatus === 'analyzing' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-                    <AnalysisProgress
-                        status={analysisStatus}
-                        currentStep={analysisProgress.current}
-                        totalSteps={analysisProgress.total}
-                    />
-                </div>
-            )}
+            {/* Analysis Progress Overlay Removed - Progress shown via Canvas Loader */}
         </div >
     );
 };
