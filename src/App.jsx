@@ -1280,14 +1280,14 @@ const ApiSettingsModal = ({ isOpen, onClose }) => {
         }
 
         setStatus('validating');
-        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
         let lastError = null;
 
         for (const modelName of modelsToTry) {
             try {
                 const genAIInstance = new GoogleGenerativeAI(apiKey);
                 const model = genAIInstance.getGenerativeModel({ model: modelName });
-                const result = await model.generateContent("Hello. Just say 'OK'.");
+                const result = await model.generateContent("Hello.");
                 const response = await result.response;
                 const text = response.text();
 
@@ -1296,7 +1296,7 @@ const ApiSettingsModal = ({ isOpen, onClose }) => {
                     return;
                 }
             } catch (err) {
-                console.error(`Validation failed for ${modelName}:`, err);
+                console.warn(`Validation skipped for ${modelName}:`, err);
                 lastError = err;
             }
         }

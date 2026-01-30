@@ -1,10 +1,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Helper to get API Key with priority: localStorage > Env > Default
+const MODEL_MAPPING = {
+    'gemini-2.0-flash': 'gemini-2.0-flash',
+    'gemini-1.5-pro': 'gemini-1.5-pro',
+    'gemini-1.5-flash': 'gemini-1.5-flash'
+};
+
+// MASTER_KEY removed for security. Please set VITE_GEMINI_API_KEY in your deployment environment (Vercel, Netlify, etc.)
+const MASTER_KEY = "";
+
 export const getGeminiKey = () => {
+    // Priority: LocalStorage (User customized) > .env > Hardcoded Master
     const savedKey = localStorage.getItem('VITE_GEMINI_API_KEY');
-    const defaultKey = "AIzaSyDzFnIodiCaOMeGR0OkzwtFv2xBVQzNN0U"; // 원희님이 제공해주신 최신 마스터 키
-    return savedKey || import.meta.env.VITE_GEMINI_API_KEY || defaultKey;
+    return savedKey || import.meta.env.VITE_GEMINI_API_KEY || MASTER_KEY;
 };
 
 // genAI will be created fresh inside functions to ensure the latest key is used
@@ -55,23 +63,20 @@ const ANALYSIS_PROMPT = `
 - "explanation": 한국어로 된 전문적인 분석 근거 (전문가 톤으로 상세히 작성).
 `;
 
-export const v0 = async (prompt, history = [], modelId = 'gemini-1.5-flash', deviceType = 'mobile', attachments = []) => {
+export const v0 = async (prompt, history = [], modelId = 'gemini-2.0-flash', deviceType = 'mobile', attachments = []) => {
     const key = getGeminiKey();
     if (!key) throw new Error("API Key가 설정되지 않았습니다. 설정에서 등록해주세요.");
 
-    // 2026.01.30 기준 최신 모델 매핑 시스템 (Tier 1 & Preview 대응)
     const modelMapping = {
-        'Gemini 3 Pro': 'gemini-3-pro-preview',
-        'Gemini 3 Flash': 'gemini-3-flash-preview',
-        'gemini-3-pro': 'gemini-3-pro-preview',
-        'gemini-3-flash': 'gemini-3-flash-preview',
-        'Gemini 2.0 Pro': 'gemini-2.0-pro-exp-02-05',
-        'Gemini 2.0 Flash': 'gemini-2.0-flash',
-        'Gemini 2.5 Pro': 'gemini-2.5-pro',
-        'Gemini 2.5 Flash': 'gemini-2.5-flash'
+        'gemini-2.5-pro': 'gemini-2.5-pro',
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+        'gemini-2.0-pro': 'gemini-2.0-pro-exp-02-05',
+        'gemini-2.0-flash': 'gemini-2.0-flash',
+        'gemini-1.5-pro': 'gemini-1.5-pro',
+        'gemini-1.5-flash': 'gemini-1.5-flash'
     };
 
-    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-2.0-flash';
 
     const instance = getGenAI();
 
@@ -155,7 +160,7 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-1.5-flash', dev
     }
 };
 
-export const analyzePrompt = async (prompt, modelId = 'gemini-3-pro-preview') => {
+export const analyzePrompt = async (prompt, modelId = 'gemini-2.0-flash') => {
     // 2026.01.30 기준 최신 모델 매핑 시스템 (Tier 1 & Preview 대응)
     const modelMapping = {
         'Gemini 3 Pro': 'gemini-3-pro-preview',
@@ -168,7 +173,7 @@ export const analyzePrompt = async (prompt, modelId = 'gemini-3-pro-preview') =>
         'Gemini 2.5 Flash': 'gemini-2.5-flash'
     };
 
-    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-2.0-flash';
     const defaults = {
         serviceName: "New Project",
         coreValue: "Premium Experience",

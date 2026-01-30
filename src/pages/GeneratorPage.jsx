@@ -25,7 +25,7 @@ const GeneratorPage = () => {
     });
     const [generatedCode, setGeneratedCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [currentModel, setCurrentModel] = useState('Gemini 3 Pro');
+    const [currentModel, setCurrentModel] = useState('gemini-2.0-flash');
     const [deviceType, setDeviceType] = useState('mobile'); // 'mobile' | 'web'
     const [activeTab, setActiveTab] = useState('ui');
     const [viewMode, setViewMode] = useState('desktop');
@@ -122,17 +122,34 @@ const GeneratorPage = () => {
 
             if (type === 'CREON_ASSET_SELECTED') {
                 console.log("Creon Asset Received:", payload);
-                // Payload structure: { type: 'image' | 'text', value: 'url' or 'text content' }
+                // Payload structure: { type: 'image' | 'text' | 'video', value: 'url', base64: '...', mimeType: '...' }
 
                 if (payload.type === 'image') {
-                    // Automatically add to chat
-                    // We need to convert URL to base64 if possible or just handle URL. 
-                    // For now, let's treat it as a user message with context.
-                    setIsCreonModalOpen(false); // Close panel
-                    handleSendMessage(`I found this visual reference in Creon: ${payload.value}. Please apply this style/image to the design.`, currentModel);
+                    // console.log("Creon Asset Received:", payload);
+
+                    // Construct the full image source for the AI to include in <img> tags
+                    const imageSource = payload.base64
+                        ? `data:${payload.mimeType || 'image/png'};base64,${payload.base64}`
+                        : payload.value;
+
+                    const attachments = payload.base64 ? [{
+                        base64: payload.base64,
+                        type: payload.mimeType || 'image/png'
+                    }] : [];
+
+                    handleSendMessage(
+                        `I found this high-quality PNG asset in Creon. Please apply this visual style to the UI AND directly insert this image into the design at an appropriate location (e.g., as a main icon or featured graphic) using an <img> tag with this exact source: "${imageSource}"`,
+                        currentModel,
+                        undefined,
+                        attachments
+                    );
                 } else if (payload.type === 'text') {
                     setIsCreonModalOpen(false);
                     handleSendMessage(`Ensure the design includes this content: "${payload.value}"`, currentModel);
+                } else if (payload.type === 'video') {
+                    // For video, we might just pass the reference text for now as most LLMs handle images better
+                    setIsCreonModalOpen(false);
+                    handleSendMessage(`I found this video reference in Creon: ${payload.value}. Please use this as inspiration for motion and dynamic elements in the design.`, currentModel);
                 }
             }
         };
@@ -301,6 +318,68 @@ const GeneratorPage = () => {
         }
     };
 
+    const handleCanvasDrop = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            // 1. Handle Files (from local disk)
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result;
+                        const base64Data = base64String.split(',')[1];
+                        const mimeType = file.type;
+                        const imageSource = `data:${mimeType};base64,${base64Data}`;
+
+                        handleSendMessage(
+                            `I just dropped this image file onto the canvas. Please analyze its style and DIRECTLY insert this image into the UI design at a suitable position using an <img> tag with this exact source: "${imageSource}"`,
+                            currentModel,
+                            undefined,
+                            [{ base64: base64Data, type: mimeType }]
+                        );
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            }
+
+            // 2. Handle Image URLs (dragged from other browser tabs)
+            const htmlData = e.dataTransfer.getData('text/html');
+            if (htmlData) {
+                const doc = new DOMParser().parseFromString(htmlData, 'text/html');
+                const img = doc.querySelector('img');
+                if (img && img.src) {
+                    handleSendMessage(
+                        `I just dragged this image from another page onto the canvas. Please incorporate this specific image into the design using this source: "${img.src}"`,
+                        currentModel
+                    );
+                    return;
+                }
+            }
+
+            const urlData = e.dataTransfer.getData('text/uri-list');
+            if (urlData) {
+                handleSendMessage(
+                    `I just dragged this external image URL onto the canvas. Please include it in the design: "${urlData}"`,
+                    currentModel
+                );
+                return;
+            }
+        } catch (err) {
+            console.error("Drop handling failed:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     return (
         <div className="flex flex-col h-screen bg-[#070707] overflow-hidden font-['Pretendard_Variable'] selection:bg-primary/30">
             {isLoading && <AIBorder />}
@@ -451,7 +530,11 @@ const GeneratorPage = () => {
                             />
                         )}
 
-                        <div className={`w-full h-full flex flex-col ${activeTab === 'ui' ? 'block' : 'hidden'}`}>
+                        <div
+                            className={`w-full h-full flex flex-col ${activeTab === 'ui' ? 'block' : 'hidden'}`}
+                            onDrop={handleCanvasDrop}
+                            onDragOver={handleDragOver}
+                        >
                             {/* Canvas Controls (Bottom-Left) */}
                             {activeTab === 'ui' && (
                                 <div className="absolute bottom-8 left-8 z-[60] flex items-center gap-3">
