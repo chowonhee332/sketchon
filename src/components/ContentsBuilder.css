@@ -16,6 +16,34 @@
   --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.reference-images-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.ref-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.ref-img:hover {
+  border-color: var(--accent-color);
+  transform: scale(1.05);
+}
+
+.ref-img.selected {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+}
+
 body[data-theme='dark'] {
   --body-bg-color: #121212;
   --panel-bg-color: #1e1e1e;

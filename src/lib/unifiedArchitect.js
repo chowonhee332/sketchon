@@ -120,22 +120,26 @@ export async function generateModularAnalysis(userInput) {
 위 정보를 바탕으로 5대 카테고리 모듈 데이터를 생성해주세요.
 `;
 
-  // Initialize model with latest key
+  // Always use a fresh key and instance inside the call
   const currentKey = getGeminiKey();
-  if (!currentKey) throw new Error("API Key가 설정되지 않았습니다. 설정에서 등록해주세요.");
-
-  const freshGenAI = new GoogleGenerativeAI(currentKey);
-  const model = freshGenAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-    },
-  });
+  if (!currentKey) {
+    console.error("API Key is missing in generateModularAnalysis");
+    throw new Error("API Key가 설정되지 않았습니다. 설정에서 등록해주세요.");
+  }
 
   try {
+    const freshGenAI = new GoogleGenerativeAI(currentKey);
+    // [업그레이드] 기획안 분석에는 가장 강력한 Gemini 3 Pro Preview 사용
+    const model = freshGenAI.getGenerativeModel({
+      model: 'gemini-3-pro-preview',
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      },
+    });
+
     // Generate content
     const result = await model.generateContent([
       { text: SYSTEM_PROMPT },
@@ -145,9 +149,12 @@ export async function generateModularAnalysis(userInput) {
     const response = await result.response;
     const text = response.text();
 
-    // Parse JSON response
+    // Parse JSON response carefully
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No valid JSON found in AI response');
+    if (!jsonMatch) {
+      console.error("AI response did not contain JSON:", text);
+      throw new Error('AI 응답에서 유효한 데이터를 찾을 수 없습니다.');
+    }
 
     const analysisData = JSON.parse(jsonMatch[0]);
 
@@ -163,46 +170,46 @@ export async function generateModularAnalysis(userInput) {
       }
     };
   } catch (error) {
-    console.error('Modular analysis failed, returning fallback:', error);
-    // Comprehensive Fallback Data
+    console.error('Modular analysis failed:', error);
+    // Fallback logic for graceful degradation
     return {
       strategicContext: {
-        projectBackground: `${keyword} 프로젝트는 시장의 변화에 대응하고 사용자 가치를 극대화하기 위해 추진되었습니다.`,
-        visionGoals: ["사용자 편의성 리딩", "시각적 고도화 달성", "비즈니스 효율성 확보"],
-        coreRequirements: ["최신 디자인 트렌드 반영", "반응형 레이아웃 구축", "성능 최적화"]
+        projectBackground: `${keyword} 프로젝트는 시장 요구와 사용자 가치 극대화를 위해 기획되었습니다.`,
+        visionGoals: ["사용자 경험 혁신", "비즈니스 경쟁력 강화", "공정 프로세스 최적화"],
+        coreRequirements: ["최신 설계 표준 준수", "데이터 보안성 확보", "사용자 접근성 개선"]
       },
       intelligence: {
-        marketDynamics: "현재 도메인은 디지털 전환 가속화와 함께 사용자 경험의 질이 핵심 경쟁력으로 부상하고 있습니다.",
-        techStack: ["React.js", "Tailwind CSS", "Framer Motion"],
-        trendInsight: "미니멀리즘과 데이터 중심의 가독성 높은 인터페이스가 시장의 주류입니다."
+        marketDynamics: "비대면 가속화와 지능형 서비스 수요가 증가하는 시장 환경입니다.",
+        techStack: ["React", "Node.js", "Gemini AI"],
+        trendInsight: "초개인화와 실시간 데이터 기반의 의사결정이 서비스의 핵심입니다."
       },
       benchmark: {
         comparativeAnalysis: [
-          { service: "Market Leader A", analysis: "직관적인 내비게이션과 강력한 데이터 시각화 제공", url: "https://toss.im" },
-          { service: "Competitor B", analysis: "모바일 우선의 간결한 워크플로우를 통한 접근성 확보", url: "https://www.apple.com" }
+          { service: "Leading Service A", analysis: "직관적인 인터페이스와 빠른 응답성 보유", url: "#" },
+          { service: "Global Platform B", analysis: "차별화된 개인화 추천 알고리즘 적용", url: "#" }
         ],
-        gapAnalysis: ["실시간 피드백 시스템 강화", "개인화된 대시보드 경험 제공"],
-        benchmarkReference: ["고대비 타이포그래피", "모듈형 카드 레이아웃"]
+        gapAnalysis: ["실시간 피드백 모듈 강화", "UI/UX 심미성 고도화"],
+        benchmarkReference: ["모듈형 디자인 시스템", "사용자 데이터 대시보드"]
       },
       userStrategy: {
         personaNeeds: [
-          { persona: "효율성 중시형 전문가", painPoints: ["정보의 파편화", "복잡한 진입 경로"] }
+          { persona: "핵심 타겟 그룹", painPoints: ["복잡한 워크플로우", "정보의 불일치"] }
         ],
-        experienceJourney: ["유입", "탐색", "데이터 확인", "목표 달성", "재방문"],
-        logicPrinciple: ["정보 구조의 위계 명확화", "피드백의 즉각성"]
+        experienceJourney: ["탐색", "관심", "행동", "만족", "재방문"],
+        logicPrinciple: ["직관적 UI 설계", "피드백의 일관성 유지"]
       },
       implementation: {
-        informationArchitecture: { structure: "Home > Dashboard > Analysis > Settings" },
+        informationArchitecture: { structure: "Home > Feature Group > Detail > Support" },
         uiConcept: {
-          visualMetaphor: "Clear Crystal & Deep Sea",
-          colorScheme: { primary: "#3182F6", secondary: "#4E5968", accent: "#00D4B1", background: "#161618", text: "#FFFFFF" },
-          typography: "Pretendard / Inter",
-          designTheme: "Premium Dark & Glass"
+          visualMetaphor: "Core Focus",
+          colorScheme: { primary: "#3182F6", secondary: "#4E5968", accent: "#00D4B1", background: "#FFFFFF", text: "#161618" },
+          typography: "Sans-serif System",
+          designTheme: "Clean & Modern"
         },
         techExecutionPlan: {
-          methodology: "Agile Sprints",
-          techStack: ["React", "Tailwind"],
-          operationStrategy: "Continuous Integration & Deployment"
+          methodology: "Agile Development",
+          techStack: ["Modern Frontend Stack"],
+          operationStrategy: "Stability first"
         }
       },
       metadata: {

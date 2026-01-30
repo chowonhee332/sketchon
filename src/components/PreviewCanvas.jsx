@@ -4,7 +4,7 @@ import { Maximize2, Minimize2, Monitor, Smartphone, Tablet, ZoomIn, ZoomOut, Wan
 
 import WireframeLoader from './WireframeLoader';
 
-const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, onSelectArtboard, selectedArea, onSelectArea, isLoading }) => {
+const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, onSelectArtboard, selectedArea, onSelectArea, isLoading, onDrop, onDragOver }) => {
     // Canvas State
     const [toolbarPos, setToolbarPos] = useState({ top: 0, left: 0, width: 0 });
     const [scale, setScale] = useState(deviceType === 'mobile' ? 0.4 : 0.7);
@@ -16,6 +16,92 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
 
     const containerRef = useRef(null);
     const iframeRef = useRef(null);
+
+    // 🎯 Calculate iframe height based on container
+    const [iframeHeight, setIframeHeight] = useState(900);
+
+    // 🎯 NEW: Separate pages state
+    const [separatedPages, setSeparatedPages] = useState([]);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            const containerHeight = containerRef.current.clientHeight;
+            setIframeHeight(containerHeight);
+        }
+    }, [viewMode]);
+
+    // 🎯 Parse HTML and extract individual pages
+    useEffect(() => {
+        if (!code) {
+            setSeparatedPages([]);
+            return;
+        }
+
+        try {
+            // Create a temporary DOM parser
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(code, 'text/html');
+
+            // Find all elements with data-screen-id
+            const pageElements = doc.querySelectorAll('[data-screen-id]');
+
+            if (pageElements.length === 0) {
+                // If no pages found, treat entire code as single page
+                setSeparatedPages([{
+                    id: 'main',
+                    title: 'Main',
+                    html: code
+                }]);
+                return;
+            }
+
+            // Extract each page
+            const pages = Array.from(pageElements).map((pageEl, index) => {
+                const screenId = pageEl.getAttribute('data-screen-id');
+                const pageHTML = pageEl.outerHTML;
+
+                // Create a complete HTML document for this page
+                const fullHTML = `
+                    <!DOCTYPE html>
+                    <html class="bg-transparent h-full">
+                        <head>
+                            <meta charset="utf-8">
+                            <script src="https://cdn.tailwindcss.com"></script>
+                            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+                            <style>
+                                body { 
+                                    font-family: 'Inter', sans-serif; 
+                                    margin: 0; 
+                                    padding: 0; 
+                                    background: transparent; 
+                                    overflow: visible; 
+                                }
+                                ::-webkit-scrollbar { display: none; }
+                            </style>
+                        </head>
+                        <body>
+                            ${pageHTML}
+                        </body>
+                    </html>
+                `;
+
+                return {
+                    id: screenId || `page-${index}`,
+                    title: screenId ? screenId.charAt(0).toUpperCase() + screenId.slice(1) : `Page ${index + 1}`,
+                    html: fullHTML
+                };
+            });
+
+            setSeparatedPages(pages);
+        } catch (error) {
+            console.error('Error parsing HTML:', error);
+            setSeparatedPages([{
+                id: 'main',
+                title: 'Main',
+                html: code
+            }]);
+        }
+    }, [code]);
 
     const canvasWidth = {
         desktop: '100%',
@@ -36,16 +122,30 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
                     });
                 }
             }
+
+            // 🎯 Handle selected elements from area selection
+            if (event.data?.type === 'ELEMENTS_SELECTED') {
+                const elements = event.data.elements || [];
+                // Pass selected elements to parent component
+                if (onSelectArea) {
+                    onSelectArea({
+                        ...selectedArea,
+                        elements: elements
+                    });
+                }
+            }
         };
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, []);
+    }, [selectedArea]);
 
     const resetSelection = () => onSelectArtboard(null);
 
     return (
         <div
             className={`w-full h-full flex flex-col overflow-hidden relative transition-colors duration-300 font-['Inter'] ${interactionMode === 'select' ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
             style={{
                 backgroundColor: bgColor,
                 backgroundImage: 'radial-gradient(rgba(128, 128, 128, 0.15) 1px, transparent 1px)',
@@ -103,6 +203,26 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
                     setIsSelecting(false);
                     if (selectionRect.width > 10 && selectionRect.height > 10) {
                         onSelectArea(selectionRect);
+
+                        // 🎯 Send selection rect to iframe to find elements within
+                        if (iframeRef.current && iframeRef.current.contentWindow) {
+                            // Convert selection rect to iframe coordinates
+                            const containerRect = containerRef.current.getBoundingClientRect();
+                            const iframeRect = iframeRef.current.getBoundingClientRect();
+
+                            // Calculate relative position within iframe
+                            const relativeRect = {
+                                left: selectionRect.left - (iframeRect.left - containerRect.left),
+                                top: selectionRect.top - (iframeRect.top - containerRect.top),
+                                width: selectionRect.width,
+                                height: selectionRect.height
+                            };
+
+                            iframeRef.current.contentWindow.postMessage({
+                                type: 'SELECT_ELEMENTS_IN_RECT',
+                                rect: relativeRect
+                            }, '*');
+                        }
                     } else {
                         setSelectionRect(null);
                         onSelectArea(null);
@@ -143,39 +263,61 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
 
             {/* Selection Toolbar Overlay (Synced with Zoom/Pan) */}
             < AnimatePresence >
-                {selectedArtboard && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                            top: (toolbarPos.top * scale) + position.y + (containerRef.current?.offsetHeight / 2) - (812 * scale / 2) - 60,
-                            left: (toolbarPos.left * scale) + position.x + (containerRef.current?.offsetWidth / 2) - (4000 * scale / 2) + (toolbarPos.width * scale / 2)
-                        }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute z-[100] -translate-x-1/2 pointer-events-auto"
-                    >
-                        <div className="flex items-center gap-1 p-1 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl text-white">
-                            <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all group">
-                                <Wand2 size={14} className="text-blue-400 group-hover:scale-110" />
-                                Generate
-                                <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 bg-white/10 px-1 rounded text-[10px]">v</span>
-                            </button>
-                            <div className="w-[1px] h-4 bg-white/10 mx-1" />
-                            <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">
-                                <Edit3 size={14} /> Edit
-                            </button>
-                            <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">
-                                <Eye size={14} /> Preview
-                            </button>
-                            <div className="w-[1px] h-4 bg-white/10 mx-1" />
-                            <button className="p-2 hover:bg-white/10 rounded-xl"><MoreHorizontal size={14} /></button>
-                            <div className="w-[1px] h-4 bg-white/10 mx-1" />
-                            <button className="p-2 hover:bg-blue-500/20 text-blue-400 rounded-xl"><ThumbsUp size={14} /></button>
-                            <button className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl"><ThumbsDown size={14} /></button>
-                        </div>
-                    </motion.div>
-                )}
+                {selectedArtboard && (() => {
+                    // 🎯 Calculate toolbar position: Place it directly above the artboard
+                    const containerRect = containerRef.current?.getBoundingClientRect();
+                    if (!containerRect) return null;
+
+                    // Calculate artboard's actual screen position (with scale + pan applied)
+                    const scaledTop = (toolbarPos.top * scale) + position.y + (containerRect.height / 2) - (iframeHeight * scale / 2);
+                    const scaledLeft = (toolbarPos.left * scale) + position.x + (containerRect.width / 2) - (1200 * scale / 2);
+                    const scaledWidth = toolbarPos.width * scale;
+
+                    // Position toolbar 10px above the artboard
+                    const toolbarHeight = 50;
+                    const toolbarGap = 10;
+                    let finalTop = scaledTop - toolbarHeight - toolbarGap;
+                    let finalLeft = scaledLeft + (scaledWidth / 2); // Center of artboard
+
+                    // 🎯 Boundary check: Keep toolbar within viewport
+                    const toolbarWidth = 400; // Approximate toolbar width
+                    finalTop = Math.max(10, Math.min(finalTop, containerRect.height - toolbarHeight - 10));
+                    finalLeft = Math.max(toolbarWidth / 2 + 10, Math.min(finalLeft, containerRect.width - toolbarWidth / 2 - 10));
+
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                top: finalTop,
+                                left: finalLeft
+                            }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute z-[100] -translate-x-1/2 pointer-events-auto"
+                        >
+                            <div className="flex items-center gap-1 p-1 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl text-white">
+                                <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all group">
+                                    <Wand2 size={14} className="text-blue-400 group-hover:scale-110" />
+                                    Generate
+                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 bg-white/10 px-1 rounded text-[10px]">v</span>
+                                </button>
+                                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">
+                                    <Edit3 size={14} /> Edit
+                                </button>
+                                <button className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">
+                                    <Eye size={14} /> Preview
+                                </button>
+                                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                <button className="p-2 hover:bg-white/10 rounded-xl"><MoreHorizontal size={14} /></button>
+                                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                <button className="p-2 hover:bg-blue-500/20 text-blue-400 rounded-xl"><ThumbsUp size={14} /></button>
+                                <button className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl"><ThumbsDown size={14} /></button>
+                            </div>
+                        </motion.div>
+                    );
+                })()}
             </AnimatePresence >
 
             {/* Infinite Canvas Area (Centered Logic) */}
@@ -240,93 +382,52 @@ const PreviewCanvas = ({ code, deviceType, viewMode, bgColor, selectedArtboard, 
                                 >
                                     <WireframeLoader deviceType={deviceType} />
                                 </motion.div>
-                            ) : (code ? (
+                            ) : (code && separatedPages.length > 0 ? (
                                 <motion.div
                                     key="iframe-content"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="relative overflow-visible bg-transparent"
+                                    className="flex flex-row gap-10 items-start"
                                     style={{
-                                        // Ensure iframe container fits content
-                                        width: viewMode === 'mobile' ? 'max-content' : '100%',
-                                        height: viewMode === 'mobile' ? 'max-content' : '100%',
+                                        width: 'max-content',
+                                        height: 'max-content',
                                     }}
                                 >
-                                    <iframe
-                                        ref={iframeRef}
-                                        title="Preview"
-                                        className="border-none bg-transparent"
-                                        sandbox="allow-scripts allow-forms"
-                                        style={{
-                                            width: viewMode === 'mobile' ? '1200px' : '100%', // Wide container for mobile strip
-                                            height: viewMode === 'mobile' ? '900px' : '1080px',
-                                            pointerEvents: interactionMode === 'select' ? 'auto' : 'none'
-                                        }}
-                                        srcDoc={`
-                                            <!DOCTYPE html>
-                                            <html class="bg-transparent h-full">
-                                                <head>
-                                                    <meta charset="utf-8">
-                                                    <script src="https://cdn.tailwindcss.com"></script>
-                                                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
-                                                    <style>
-                                                        body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; background: transparent; min-height: 100vh; overflow: visible; display: flex; justify-content: center; }
-                                                        /* If mobile, allow horizontal flex in body */
-                                                        ${viewMode === 'mobile' ? 'body { align-items: flex-start; }' : ''}
-                                                        
-                                                        ::-webkit-scrollbar { display: none; }
-                                                        
-                                                        /* Selection Highlight Style */
-                                                        [data-screen-id] { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; border-radius: 12px !important; overflow: hidden; }
-                                                        [data-screen-id]:hover { transform: translateY(-4px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-                                                        [data-selected="true"] { outline: 4px solid #3b82f6; outline-offset: 8px; }
-                                                    </style>
-                                                </head>
-                                                <body>
-                                                    ${code}
-                                                    <script>
-                                                        // Fallback: Ensure all direct children of canvas-root have IDs
-                                                        // This fixes cases where AI generates screens but forgets individual IDs
-                                                        setTimeout(() => {
-                                                            const root = document.getElementById('canvas-root');
-                                                            if (root) {
-                                                                Array.from(root.children).forEach((child, i) => {
-                                                                    // Only apply if it looks like a screen container (not a script or style)
-                                                                    if (child.tagName === 'DIV' || child.tagName === 'SECTION') {
-                                                                        if (!child.getAttribute('data-screen-id')) {
-                                                                            child.setAttribute('data-screen-id', 'screen-' + (i + 1));
-                                                                        }
-                                                                        // Force some separation styles if missing
-                                                                        child.style.position = 'relative';
-                                                                    }
-                                                                });
-                                                            }
-                                                        }, 100);
+                                    {separatedPages.map((page, index) => (
+                                        <motion.div
+                                            key={page.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            className="relative flex-shrink-0"
+                                            style={{
+                                                width: viewMode === 'mobile' ? '375px' : '100%',
+                                            }}
+                                        >
+                                            {/* Page Title */}
+                                            <div className="absolute -top-8 left-0 text-xs text-gray-400 font-mono flex items-center gap-2">
+                                                <span>{page.title}</span>
+                                                <button className="opacity-50 hover:opacity-100">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                </button>
+                                            </div>
 
-                                                        // Ensure click events bubble up
-                                                        document.addEventListener('click', (e) => {
-                                                            const screen = e.target.closest('[data-screen-id]');
-                                                            if (screen) {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                
-                                                                // Clear others
-                                                                document.querySelectorAll('[data-selected]').forEach(el => el.removeAttribute('data-selected'));
-                                                                screen.setAttribute('data-selected', 'true');
-                                                                
-                                                                const rect = screen.getBoundingClientRect();
-                                                                window.parent.postMessage({
-                                                                    type: 'ARTBOARD_CLICK',
-                                                                    id: screen.getAttribute('data-screen-id'),
-                                                                    rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
-                                                                }, '*');
-                                                            }
-                                                        });
-                                                    </script>
-                                                </body>
-                                            </html>
-                                        `}
-                                    />
+                                            {/* Individual iframe for each page */}
+                                            <iframe
+                                                title={`Preview - ${page.title}`}
+                                                className="border-none bg-white rounded-xl shadow-2xl"
+                                                sandbox="allow-scripts allow-forms"
+                                                style={{
+                                                    width: viewMode === 'mobile' ? '375px' : '100%',
+                                                    height: `${iframeHeight}px`,
+                                                    pointerEvents: interactionMode === 'select' ? 'auto' : 'none'
+                                                }}
+                                                srcDoc={page.html}
+                                            />
+                                        </motion.div>
+                                    ))}
                                 </motion.div>
                             ) : null)}
                         </AnimatePresence>

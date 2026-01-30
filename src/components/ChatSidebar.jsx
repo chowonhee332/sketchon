@@ -117,7 +117,7 @@ const ModelSelector = ({ currentModel, onSelect }) => {
     );
 };
 
-const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, onClearSelection, onStartAnalysis, onToggleSidebar }) => {
+const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModelSelect, selectedArtboard, selectedArea, selectedElements = [], onClearSelection, onStartAnalysis, onToggleSidebar }) => {
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState([]); // Array of { id, type, base64, preview }
     const fileInputRef = useRef(null);
@@ -259,6 +259,55 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                         </motion.div>
                     ) : null}
                 </AnimatePresence>
+
+                {/* 🎯 Selected Elements Display */}
+                {selectedElements.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-3 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">
+                                Selected Objects ({selectedElements.length})
+                            </div>
+                            <button
+                                onClick={onClearSelection}
+                                className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors"
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
+
+                        <div className="max-h-32 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-purple-500/50">
+                            {selectedElements.map((el, i) => (
+                                <div key={i} className="flex items-center gap-2 p-1.5 bg-black/30 rounded text-[10px]">
+                                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-mono">
+                                        {el.tag}
+                                    </span>
+                                    {el.id && (
+                                        <span className="text-blue-400 font-mono">#{el.id}</span>
+                                    )}
+                                    <span className="text-slate-400 truncate flex-1">
+                                        {el.text || el.classes}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const elementsDesc = selectedElements.map(el =>
+                                    `${el.tag}${el.id ? '#' + el.id : ''}: "${el.text}"`
+                                ).join(', ');
+                                setInput(`이 부분만 수정해줘: ${elementsDesc}`);
+                            }}
+                            className="mt-2 w-full py-1.5 px-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-[11px] font-semibold text-purple-300 transition-all"
+                        >
+                            ✏️ 이 부분만 수정
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* Attachment Preview Area */}
                 {attachments.length > 0 && (

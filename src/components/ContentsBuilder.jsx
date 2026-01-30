@@ -200,6 +200,14 @@ const htmlContent = `
               </div>
             </div>
             <div class="inspector-section">
+              <h3>Style Reference (Creon 3D)</h3>
+              <div class="reference-images-container">
+                <img src="/assets/references/creon_ref_1.png" alt="Ref 1" class="ref-img selected" />
+                <img src="/assets/references/creon_ref_2.png" alt="Ref 2" class="ref-img" />
+                <img src="/assets/references/creon_ref_3.png" alt="Ref 3" class="ref-img" />
+              </div>
+            </div>
+            <div class="inspector-section">
               <h3>Prompt</h3>
               <textarea id="prompt-input" rows="4"></textarea>
               <div style="margin-top: 16px">

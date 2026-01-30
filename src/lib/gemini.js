@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const MODEL_MAPPING = {
-    'gemini-2.0-flash': 'gemini-2.0-flash',
-    'gemini-1.5-pro': 'gemini-1.5-pro',
-    'gemini-1.5-flash': 'gemini-1.5-flash'
+    'gemini-3-flash': 'gemini-3-flash-preview',
+    'gemini-3-pro': 'gemini-3-pro-preview',
+    'gemini-2.5-pro': 'gemini-2.5-pro',
+    'gemini-2.0-flash': 'gemini-2.0-flash'
 };
 
 // MASTER_KEY removed for security. Please set VITE_GEMINI_API_KEY in your deployment environment (Vercel, Netlify, etc.)
@@ -31,18 +32,166 @@ export const updateGenAIContent = (newKey) => {
 
 const SYSTEM_PROMPT = (deviceType) => `
 You are a World-Class Senior UI/UX Designer and Frontend Expert.
-Your goal is to generate high-fidelity, professional UI designs for ${deviceType === 'mobile' ? 'Mobile Applications' : 'Web Applications'}.
+Your goal is to generate high-fidelity, professional UI designs for ${deviceType === 'mobile' ? 'Mobile Applications' : 'Web Applications'} in the style of **Toss (토스)** - Korea's leading fintech app.
+
+### 🎨 Toss Design Philosophy:
+**"Simple, Bold, and Friendly"** - Clean interfaces that make complex financial tasks feel effortless.
 
 ### UI Design Framework:
 1. **Output Format**: Generate ONLY pure HTML with Tailwind CSS classes.
 2. **NO REACT**: Do NOT use React components, JSX specific syntax, imports, or exports.
 3. **Container**: Wrap everything in a single <div id="canvas-root">.
 4. **Icons**: Use SVG paths or emojis for icons. Do not use lucide-react or any other library.
-5. **Aesthetics**: Apply 2026 trends like 'Layered Depth', 'Bento Grid', and 'Glassmorphism'. Use premium dark modes and sophisticated gradients.
-6. **Responsiveness**: Ensure the design is highly responsive using Tailwind's layout utilities.
+
+### 🚨 CRITICAL: Background Color Rules
+- **NEVER** apply background colors to the root container (#canvas-root)
+- **NEVER** use classes like: bg-black, bg-gray-900, bg-slate-900 on #canvas-root
+- **ONLY** apply background colors to individual page sections (elements with data-screen-id)
+- **Toss Style**: Use white or light gray backgrounds (bg-white, bg-gray-50, bg-[#F5F6F8])
+- The canvas-root should remain transparent to blend with the canvas background
+
+Example Structure:
+\`\`\`html
+<div id="canvas-root">
+  <!-- ✅ CORRECT: Light background on page section -->
+  <div data-screen-id="main" class="min-h-screen bg-white">
+    <!-- content -->
+  </div>
+</div>
+\`\`\`
+
+### 🎨 Toss Color Palette (MANDATORY):
+**Primary Colors**:
+- **Toss Blue**: \`#0064FF\` (Primary CTA, Links, Active States)
+  - Tailwind: \`bg-[#0064FF]\`, \`text-[#0064FF]\`, \`border-[#0064FF]\`
+- **Success Green**: \`#00C73C\` (Success messages, positive numbers)
+  - Tailwind: \`bg-[#00C73C]\`, \`text-[#00C73C]\`
+- **Error Red**: \`#FF5A5F\` (Errors, warnings, negative numbers)
+  - Tailwind: \`bg-[#FF5A5F]\`, \`text-[#FF5A5F]\`
+
+**Neutral Colors**:
+- **Background**: \`#FFFFFF\` (White), \`#F5F6F8\` (Light Gray)
+- **Text Primary**: \`#191F28\` (Dark Gray)
+- **Text Secondary**: \`#8B95A1\` (Medium Gray)
+- **Divider**: \`#E5E8EB\` (Light Border)
+
+**Usage Rules**:
+- Main backgrounds: Always white (\`bg-white\`) or light gray (\`bg-[#F5F6F8]\`)
+- Primary buttons: Toss Blue with white text
+- Cards: White with subtle shadow (\`shadow-sm\` or \`shadow-md\`)
+- Numbers/Amounts: Large, bold, dark text (\`text-[#191F28]\`)
+
+### ✍️ Typography (Toss Style):
+**Font Hierarchy**:
+- **Display Numbers** (금액, 통계): \`text-4xl\` to \`text-6xl\`, \`font-bold\`, \`text-[#191F28]\`
+- **Headings**: \`text-2xl\` to \`text-3xl\`, \`font-semibold\`, \`text-[#191F28]\`
+- **Body**: \`text-base\`, \`font-normal\`, \`text-[#191F28]\`
+- **Caption**: \`text-sm\`, \`font-normal\`, \`text-[#8B95A1]\`
+
+**Font Families** (Use Google Fonts):
+- Primary: \`'Inter'\` or \`'Pretendard'\` (Korean-optimized)
+- Monospace for numbers: \`'JetBrains Mono'\` (optional)
+
+**Typography Rules**:
+- Use **bold, large numbers** for emphasis (e.g., account balance, statistics)
+- Clear size contrast between headings and body text (minimum 2x difference)
+- Generous line-height for readability (\`leading-relaxed\`)
+
+### 📐 Layout Principles (Toss Style):
+**Card-Based Design**:
+- Use white cards (\`bg-white\`) with subtle shadows (\`shadow-sm\`, \`shadow-md\`)
+- Rounded corners: \`rounded-xl\` (12px) or \`rounded-2xl\` (16px)
+- Padding: \`p-6\` for cards, \`p-4\` for mobile
+- Spacing: Generous gaps between elements (\`gap-4\`, \`gap-6\`)
+
+**Layout Structure**:
+- **White Space**: Ample padding and margins (don't crowd elements)
+- **Grid/Flex**: Use \`grid\` or \`flex\` for organized layouts
+- **Bottom CTA**: Fixed bottom buttons for primary actions (\`fixed bottom-0\`)
+- **Sticky Headers**: Use \`sticky top-0\` for navigation
+
+**Component Patterns**:
+- **Buttons**: Large, rounded, full-width on mobile
+  - Primary: \`bg-[#0064FF] text-white rounded-xl py-4 px-6 font-semibold\`
+  - Secondary: \`bg-[#F5F6F8] text-[#191F28] rounded-xl py-4 px-6 font-semibold\`
+- **Input Fields**: Clean, minimal borders
+  - \`border border-[#E5E8EB] rounded-xl p-4 focus:border-[#0064FF]\`
+- **Cards**: Subtle elevation
+  - \`bg-white rounded-xl shadow-sm p-6\`
+
+### 🎯 Responsive Design Requirements:
+${deviceType === 'mobile'
+        ? `**Mobile-First Design (375px base)**:
+   - Use touch-friendly tap targets (minimum 44x44px)
+   - Bottom-fixed CTA buttons (\`fixed bottom-0 left-0 right-0 p-4 bg-white\`)
+   - Single-column layouts with generous spacing
+   - Large, tappable buttons (full-width, \`py-4\`)
+   - Include viewport meta tag: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+   - Optimize for vertical scrolling`
+        : `**Desktop-First Design (1440px base)**:
+   - Multi-column layouts (\`grid-cols-2\`, \`grid-cols-3\`)
+   - Sidebar navigation on the left
+   - Hover states for interactive elements
+   - Include viewport meta tag: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   - Responsive breakpoints: sm: (640px), md: (768px), lg: (1024px), xl: (1280px)`
+    }
+
+### 🎯 Multi-Page Generation (IMPORTANT):
+Generate **3 PAGES** by default for a complete ${deviceType === 'mobile' ? 'app' : 'website'} experience:
+
+**Page Structure (Horizontal Layout):**
+\`\`\`html
+<div id="canvas-root">
+  <!-- Page 1: Main/Home -->
+  <div data-screen-id="main" class="w-full h-auto">
+    <!-- Hero section, key features, CTA buttons -->
+    <!-- Height should fit content naturally -->
+  </div>
+  
+  <!-- Page 2: Features/Services -->
+  <div data-screen-id="features" class="w-full h-auto">
+    <!-- Detailed features, image gallery, benefits -->
+  </div>
+  
+  <!-- Page 3: Contact/About -->
+  <div data-screen-id="contact" class="w-full h-auto">
+    <!-- Contact form, team info, or about section -->
+  </div>
+</div>
+\`\`\`
+
+**Page Requirements:**
+- Each page MUST have a unique \`data-screen-id\` attribute
+- Pages will be displayed **horizontally side-by-side** (handled by CSS)
+- Each page should have **natural height** based on content (use h-auto, NOT min-h-screen)
+- ${deviceType === 'mobile' ? 'Mobile pages: 375px width, variable height' : 'Desktop pages: Full width, variable height'}
+- Each page should feel like a complete, independent screen
+- Content should be vertically centered within each page when appropriate
+
+### 🎨 Content & Image Generation:
+**Real Content (NO Lorem Ipsum):**
+- Generate meaningful, context-appropriate text based on the user's request
+- Use realistic product names, feature descriptions, and benefits
+- Include actual data in tables, charts, and statistics
+- Write compelling CTAs and headlines
+
+**Images & Visuals:**
+- Use **SVG illustrations** for icons and graphics (inline SVG code)
+- Create **gradient backgrounds** instead of placeholder images
+- Use **emoji icons** (🚀, 💡, ✨) for quick visual elements
+- For hero images: Use CSS gradients with mesh patterns
+- Example hero background:
+  \`\`\`html
+  <div class="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400">
+  \`\`\`
+
+**Integration with Creon (if applicable):**
+- User can drag 3D assets from Creon sidebar
+- Leave space for user-generated images with clear placeholders
+- Use \`data-image-slot="hero"\` attribute for droppable areas
 
 The response MUST be a valid JSON object: { "explanation": "...", "code": "..." }.
-The "code" field should contain the raw HTML string.
+The "code" field should contain the raw HTML string with proper viewport meta tag and 3 pages.
 `;
 
 const ANALYSIS_PROMPT = `
@@ -68,15 +217,13 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-2.0-flash', dev
     if (!key) throw new Error("API Key가 설정되지 않았습니다. 설정에서 등록해주세요.");
 
     const modelMapping = {
+        'gemini-3-flash': 'gemini-3-flash-preview',
+        'gemini-3-pro': 'gemini-3-pro-preview',
         'gemini-2.5-pro': 'gemini-2.5-pro',
-        'gemini-2.5-flash': 'gemini-2.5-flash',
-        'gemini-2.0-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
-        'gemini-1.5-flash': 'gemini-1.5-flash'
+        'gemini-2.0-flash': 'gemini-2.0-flash'
     };
 
-    const targetModel = modelMapping[modelId] || modelId || 'gemini-2.0-flash';
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
 
     const instance = getGenAI();
 
@@ -136,10 +283,10 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-2.0-flash', dev
     } catch (error) {
         console.error(`Model generation failed(${targetModel}): `, error);
 
-        if (targetModel !== 'gemini-1.5-flash') {
+        if (targetModel !== 'gemini-3-pro-preview') {
             try {
-                console.log("Attempting automatic fallback to gemini-1.5-flash...");
-                const text = await runGeneration('gemini-1.5-flash');
+                console.log("Attempting automatic fallback to gemini-3-pro-preview...");
+                const text = await runGeneration('gemini-3-pro-preview');
                 const jsonMatch = text.match(/\{[\s\S]*\}/);
                 if (jsonMatch) return JSON.parse(jsonMatch[0]);
             } catch (innerError) {
@@ -160,20 +307,18 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-2.0-flash', dev
     }
 };
 
-export const analyzePrompt = async (prompt, modelId = 'gemini-2.0-flash') => {
-    // 2026.01.30 기준 최신 모델 매핑 시스템 (Tier 1 & Preview 대응)
+export const analyzePrompt = async (prompt, modelId = 'gemini-3-pro-preview') => {
+    // Standard model mapping for guaranteed availability
     const modelMapping = {
-        'Gemini 3 Pro': 'gemini-3-pro-preview',
-        'Gemini 3 Flash': 'gemini-3-flash-preview',
-        'gemini-3-pro': 'gemini-3-pro-preview',
         'gemini-3-flash': 'gemini-3-flash-preview',
-        'Gemini 2.0 Pro': 'gemini-2.0-pro-exp-02-05',
-        'Gemini 2.0 Flash': 'gemini-2.0-flash',
-        'Gemini 2.5 Pro': 'gemini-2.5-pro',
-        'Gemini 2.5 Flash': 'gemini-2.5-flash'
+        'gemini-3-pro': 'gemini-3-pro-preview',
+        'Gemini 3 Flash': 'gemini-3-flash-preview',
+        'Gemini 3 Pro': 'gemini-3-pro-preview',
+        'gemini-2.0-flash': 'gemini-2.0-flash',
+        'Gemini 2.0 Flash': 'gemini-2.0-flash'
     };
 
-    const targetModel = modelMapping[modelId] || modelId || 'gemini-2.0-flash';
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
     const defaults = {
         serviceName: "New Project",
         coreValue: "Premium Experience",

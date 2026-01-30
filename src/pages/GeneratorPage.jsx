@@ -25,13 +25,14 @@ const GeneratorPage = () => {
     });
     const [generatedCode, setGeneratedCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [currentModel, setCurrentModel] = useState('gemini-2.0-flash');
+    const [currentModel, setCurrentModel] = useState('gemini-3-flash');
     const [deviceType, setDeviceType] = useState('mobile'); // 'mobile' | 'web'
     const [activeTab, setActiveTab] = useState('ui');
     const [viewMode, setViewMode] = useState('desktop');
     const [bgColor, setBgColor] = useState('#e5e5e5');
     const [selectedArtboard, setSelectedArtboard] = useState(null);
     const [selectedArea, setSelectedArea] = useState(null);
+    const [selectedElements, setSelectedElements] = useState([]); // 🎯 Selected elements from area selection
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
     const [isCreonModalOpen, setIsCreonModalOpen] = useState(false);
@@ -50,6 +51,7 @@ const GeneratorPage = () => {
     const [panelWidth, setPanelWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
     const [projectId, setProjectId] = useState(null);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
 
     // Initial load & ID management
     // Initial load useEffect moved below to access handleAnalysisSubmit
@@ -89,8 +91,11 @@ const GeneratorPage = () => {
     useEffect(() => {
         const handleMouseMove = (e) => {
             if (!isResizing) return;
+            e.preventDefault(); // Prevent text selection
+
             const newWidth = window.innerWidth - e.clientX;
-            if (newWidth > 300 && newWidth < 1200) {
+            // More permissive range for smoother resizing
+            if (newWidth > 280 && newWidth < 1400) {
                 setPanelWidth(newWidth);
             }
         };
@@ -98,12 +103,14 @@ const GeneratorPage = () => {
         const handleMouseUp = () => {
             setIsResizing(false);
             document.body.style.cursor = 'default';
+            document.body.style.userSelect = ''; // Re-enable text selection
         };
 
         if (isResizing) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
             document.body.style.cursor = 'ew-resize';
+            document.body.style.userSelect = 'none'; // Prevent text selection while dragging
         }
 
         return () => {
@@ -320,10 +327,30 @@ const GeneratorPage = () => {
 
     const handleCanvasDrop = async (e) => {
         e.preventDefault();
+        setIsDraggingOver(false);
+        // console.log("Drop detected!", e.dataTransfer.types);
         setIsLoading(true);
 
         try {
-            // 1. Handle Files (from local disk)
+            // 1. Handle Creon Data or HTML (priority)
+            const htmlData = e.dataTransfer.getData('text/html');
+            const urlData = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('url');
+
+            if (htmlData) {
+                const doc = new DOMParser().parseFromString(htmlData, 'text/html');
+                const img = doc.querySelector('img');
+                if (img && img.src) {
+                    const isCreonAsset = img.dataset.creonAsset === 'true' || img.src.includes('data:image');
+                    const promptText = isCreonAsset
+                        ? `[Creon Asset] 사용자가 Creon에서 고품질 3D 에셋을 드래그하여 배치했습니다. 이 아이콘을 현재 UI 컨셉에 맞춰서 최적의 위치(예: 히어로 섹션, 메인 아이콘 등)에 배치하고, 디자인의 완성도를 높여주세요. 이미지 소스: "${img.src}"`
+                        : `I just dragged this image from another window into the canvas. Please incorporate this image into the design using this source: "${img.src}"`;
+
+                    handleSendMessage(promptText, currentModel);
+                    return;
+                }
+            }
+
+            // 2. Handle Files (from local disk)
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
                 if (file) {
@@ -335,7 +362,7 @@ const GeneratorPage = () => {
                         const imageSource = `data:${mimeType};base64,${base64Data}`;
 
                         handleSendMessage(
-                            `I just dropped this image file onto the canvas. Please analyze its style and DIRECTLY insert this image into the UI design at a suitable position using an <img> tag with this exact source: "${imageSource}"`,
+                            `사용자가 로컬 이미지를 드롭했습니다. 이 이미지를 분석하여 UI 디자인의 적절한 위치에 <img> 태그(src: "${imageSource}")로 삽입해 주세요.`,
                             currentModel,
                             undefined,
                             [{ base64: base64Data, type: mimeType }]
@@ -346,28 +373,26 @@ const GeneratorPage = () => {
                 }
             }
 
-            // 2. Handle Image URLs (dragged from other browser tabs)
-            const htmlData = e.dataTransfer.getData('text/html');
-            if (htmlData) {
-                const doc = new DOMParser().parseFromString(htmlData, 'text/html');
-                const img = doc.querySelector('img');
-                if (img && img.src) {
-                    handleSendMessage(
-                        `I just dragged this image from another page onto the canvas. Please incorporate this specific image into the design using this source: "${img.src}"`,
-                        currentModel
-                    );
-                    return;
-                }
-            }
-
-            const urlData = e.dataTransfer.getData('text/uri-list');
             if (urlData) {
+                // Some browsers might provide multiple URLs separated by newlines
+                const firstUrl = urlData.split('\n')[0].trim();
                 handleSendMessage(
-                    `I just dragged this external image URL onto the canvas. Please include it in the design: "${urlData}"`,
+                    `I just dragged this image URL into the canvas. Please include it in the design: "${firstUrl}"`,
                     currentModel
                 );
                 return;
             }
+
+            // 3. Fallback to text link
+            const textData = e.dataTransfer.getData('text/plain');
+            if (textData && (textData.startsWith('http') || textData.includes('data:image'))) {
+                handleSendMessage(
+                    `I just dragged this image into the canvas. Please include it: "${textData}"`,
+                    currentModel
+                );
+                return;
+            }
+
         } catch (err) {
             console.error("Drop handling failed:", err);
         } finally {
@@ -378,6 +403,21 @@ const GeneratorPage = () => {
     const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!isDraggingOver) setIsDraggingOver(true);
+    };
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Only set to false if we are not moving into a child element
+        if (e.currentTarget.contains(e.relatedTarget)) return;
+        setIsDraggingOver(false);
     };
 
     return (
@@ -475,9 +515,11 @@ const GeneratorPage = () => {
                             onModelSelect={setCurrentModel}
                             selectedArtboard={selectedArtboard}
                             selectedArea={selectedArea}
+                            selectedElements={selectedElements} // 🎯 Pass selected elements
                             onClearSelection={() => {
                                 setSelectedArtboard(null);
                                 setSelectedArea(null);
+                                setSelectedElements([]);
                             }}
                             onStartAnalysis={() => setIsInputModalOpen(true)}
                             onToggleSidebar={() => setIsSidebarOpen(false)}
@@ -531,9 +573,11 @@ const GeneratorPage = () => {
                         )}
 
                         <div
-                            className={`w-full h-full flex flex-col ${activeTab === 'ui' ? 'block' : 'hidden'}`}
+                            className={`w-full h-full flex flex-col transition-all duration-300 ${activeTab === 'ui' ? 'block' : 'hidden'} ${isDraggingOver ? 'ring-4 ring-blue-500/50 bg-blue-500/5' : ''}`}
                             onDrop={handleCanvasDrop}
                             onDragOver={handleDragOver}
+                            onDragEnter={handleDragEnter}
+                            onDragLeave={handleDragLeave}
                         >
                             {/* Canvas Controls (Bottom-Left) */}
                             {activeTab === 'ui' && (
@@ -597,9 +641,18 @@ const GeneratorPage = () => {
                                 bgColor={bgColor}
                                 onSelectArtboard={setSelectedArtboard}
                                 selectedArtboard={selectedArtboard}
-                                onSelectArea={setSelectedArea}
+                                onSelectArea={(area) => {
+                                    setSelectedArea(area);
+                                    if (area && area.elements) {
+                                        setSelectedElements(area.elements);
+                                    } else {
+                                        setSelectedElements([]);
+                                    }
+                                }}
                                 selectedArea={selectedArea}
                                 isLoading={isLoading}
+                                onDrop={handleCanvasDrop}
+                                onDragOver={handleDragOver}
                             />
                         </div>
                     </div>
@@ -614,12 +667,14 @@ const GeneratorPage = () => {
                         {/* Resize Handle (Google Style) - Moved outside or kept? Kept for resizing */}
                         {isCreonModalOpen && (
                             <div
-                                className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-50"
+                                className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/50 transition-colors z-50 group"
                                 onMouseDown={(e) => {
                                     e.preventDefault();
                                     setIsResizing(true);
                                 }}
-                            />
+                            >
+                                <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-12 bg-gray-400/50 rounded-full group-hover:bg-blue-500 transition-colors" />
+                            </div>
                         )}
 
                         {isCreonModalOpen && (

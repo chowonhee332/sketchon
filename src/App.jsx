@@ -1620,7 +1620,50 @@ const LandingPage = () => {
     };
 
     const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
-    const [systemPrompt, setSystemPrompt] = useState('Role: 세계적인 수준의 시니어 UI/UX 디자인 전문가\nVisual Style: 2026년 트렌드인 "Layered Depth", "Bento Grid", "Glassmorphism"을 적용하여 입체감 있는 디자인 생성\nGuidelines: Apple과 Google의 디자인 가이드라인을 준수하며, 작동 가능한 고해상도 프리미엄 인터페이스를 React/Tailwind 코드로 구현하라.\nThinking Level: High (레이아웃의 논리적 구조와 사용성을 심도 있게 고려할 것)');
+    const [systemPrompt, setSystemPrompt] = useState(`{
+  "role": "세계적인 수준의 시니어 UI/UX 디자인 전문가",
+  "design_philosophy": {
+    "name": "Toss (토스) Design System",
+    "motto": "Simple, Bold, and Friendly",
+    "description": "복잡한 금융 업무를 간단하고 친근하게 만드는 깔끔한 인터페이스"
+  },
+  "visual_style": {
+    "color_palette": {
+      "primary": "#0064FF (Toss Blue)",
+      "success": "#00C73C",
+      "error": "#FF5A5F",
+      "background": "#FFFFFF, #F5F6F8 (Light Gray)",
+      "text_primary": "#191F28",
+      "text_secondary": "#8B95A1"
+    },
+    "typography": {
+      "display_numbers": "text-4xl ~ text-6xl, font-bold (금액, 통계 강조)",
+      "headings": "text-2xl ~ text-3xl, font-semibold",
+      "body": "text-base, font-normal",
+      "caption": "text-sm, text-[#8B95A1]"
+    },
+    "layout": {
+      "base": "밝고 깔끔한 화이트 베이스",
+      "cards": "bg-white, rounded-xl, shadow-sm/md",
+      "spacing": "넉넉한 여백 (gap-4, gap-6, p-6)",
+      "buttons": "rounded-xl, py-4, full-width on mobile"
+    }
+  },
+  "component_patterns": {
+    "primary_button": "bg-[#0064FF] text-white rounded-xl py-4 px-6 font-semibold",
+    "secondary_button": "bg-[#F5F6F8] text-[#191F28] rounded-xl py-4 px-6 font-semibold",
+    "input_field": "border border-[#E5E8EB] rounded-xl p-4 focus:border-[#0064FF]",
+    "card": "bg-white rounded-xl shadow-sm p-6"
+  },
+  "guidelines": [
+    "토스 앱의 디자인 시스템을 준수할 것",
+    "HTML/Tailwind CSS로 작동 가능한 고해상도 인터페이스 구현",
+    "사용자 경험(UX)과 접근성(Accessibility)을 최우선으로 고려",
+    "대담한 숫자 표현으로 핵심 정보 강조",
+    "카드 기반 레이아웃으로 정보 구조화"
+  ],
+  "thinking_level": "High - 레이아웃의 논리적 구조와 사용성을 심도 있게 고려"
+}`);
 
     const TEMPLATES = [
         { title: 'SaaS Bento Dashboard', content: 'Design a high-fidelity SaaS analytics dashboard using a "Bento Grid" layout. Focus on "Layered Depth" with floating metric cards and a frosted glass navigation bar. Vibrant emerald accents on a deep charcoal background.' },
