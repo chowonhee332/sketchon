@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Helper to get API Key with priority: localStorage > Env
+// Helper to get API Key with priority: localStorage > Env > Default
 export const getGeminiKey = () => {
     const savedKey = localStorage.getItem('VITE_GEMINI_API_KEY');
-    return savedKey || import.meta.env.VITE_GEMINI_API_KEY;
+    const defaultKey = "AIzaSyDzFnIodiCaOMeGR0OkzwtFv2xBVQzNN0U"; // 원희님이 제공해주신 최신 마스터 키
+    return savedKey || import.meta.env.VITE_GEMINI_API_KEY || defaultKey;
 };
 
 // genAI will be created fresh inside functions to ensure the latest key is used
@@ -37,39 +38,40 @@ The "code" field should contain the raw HTML string.
 `;
 
 const ANALYSIS_PROMPT = `
-You are a Senior UI/UX Strategy Consultant.
-Your task is to analyze the user's request and build a "Project Blueprint" for a high-fidelity UI design.
-Even if the user provides very little input, use your expert intuition to fill in the blanks with professional, high-conversion strategies.
+당신은 세계 최고 수준의 UI/UX 전략 컨설턴트입니다.
+사용자의 요청을 분석하여 고품질 UI 디자인을 위한 "프로젝트 블루프린트"를 생성하는 것이 당신의 임무입니다.
+사용자가 아주 짧은 입력을 제공하더라도, 당신의 전문가적 직관을 사용하여 비즈니스 로직, 사용자의 페인포인트, 시각적 계층 구조를 전문적으로 추론하세요.
 
-Return ONLY valid JSON with the following fields:
-- "serviceName": Name of the service (e.g., "Aegis Pay").
-- "coreValue": The fundamental value proposition (e.g., "Frictionless Security").
-- "coreTask": The main action users perform (e.g., "Real-time Fraud Monitoring").
-- "targetUser": Specific persona (e.g., "Security-conscious Crypto Investors").
-- "painPoint": Current user frustration (e.g., "High latency in transaction approval").
-- "solution": How the UI solves the pain point (e.g., "One-tap biometric verification").
-- "hierarchy": Key elements ranked by priority (e.g., "1st: Wealth Overview, 2nd: Safety Status").
-- "visualStyle": Specific visual keywords (e.g., "Layered Depth, Glassmorphism, Neon Blue Accents").
-- "techStack": Recommendations (e.g., "React, Tailwind, Framer Motion").
-- "explanation": Professional rationale in Korean (Expert tone).
+응답은 반드시 다음 필드를 포함하는 유효한 JSON 객체여야 합니다:
+- "serviceName": 서비스 이름 (예: "Aegis Pay").
+- "coreValue": 핵심 가치 제안 (예: "마찰 없는 보안").
+- "coreTask": 사용자가 수행하는 주요 작업 (예: "실시간 부정 거래 모니터링").
+- "targetUser": 구체적인 사용자 페르소나 (예: "보안에 민감한 암호화폐 투자자").
+- "painPoint": 현재 사용자의 불만 사항 (예: "거래 승인의 높은 지연 시간").
+- "solution": UI가 이 페인포인트를 해결하는 방법 (예: "원탭 생체 인증").
+- "hierarchy": 우선순위별 주요 요소 (예: "1순위: 자산 개요, 2순위: 안전 상태").
+- "visualStyle": 구체적인 시각적 키워드 (예: "레이어드 뎁스, 글래스모피즘, 네온 블루 엑센트").
+- "techStack": 권장 기술 (예: "React, Tailwind, Framer Motion").
+- "explanation": 한국어로 된 전문적인 분석 근거 (전문가 톤으로 상세히 작성).
 `;
 
 export const v0 = async (prompt, history = [], modelId = 'gemini-1.5-flash', deviceType = 'mobile', attachments = []) => {
     const key = getGeminiKey();
     if (!key) throw new Error("API Key가 설정되지 않았습니다. 설정에서 등록해주세요.");
 
-    // UI에서 넘어온 이름을 실제 API용 ID로 매핑 (안정성을 위해 1.5/2.0 위주로 강제 매핑)
+    // 2026.01.30 기준 최신 모델 매핑 시스템 (Tier 1 & Preview 대응)
     const modelMapping = {
-        'Gemini 3 Pro': 'gemini-1.5-pro',
-        'Gemini 3 Flash': 'gemini-1.5-flash-001',
-        'gemini-3-pro': 'gemini-1.5-pro',
-        'gemini-3-flash': 'gemini-1.5-flash-001',
+        'Gemini 3 Pro': 'gemini-3-pro-preview',
+        'Gemini 3 Flash': 'gemini-3-flash-preview',
+        'gemini-3-pro': 'gemini-3-pro-preview',
+        'gemini-3-flash': 'gemini-3-flash-preview',
+        'Gemini 2.0 Pro': 'gemini-2.0-pro-exp-02-05',
         'Gemini 2.0 Flash': 'gemini-2.0-flash',
-        'Gemini 1.5 Pro': 'gemini-1.5-pro',
-        'Gemini 1.5 Flash': 'gemini-1.5-flash-001'
+        'Gemini 2.5 Pro': 'gemini-2.5-pro',
+        'Gemini 2.5 Flash': 'gemini-2.5-flash'
     };
 
-    const targetModel = modelMapping[modelId] || modelId || 'gemini-1.5-flash-001';
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
 
     const instance = getGenAI();
 
@@ -153,8 +155,20 @@ export const v0 = async (prompt, history = [], modelId = 'gemini-1.5-flash', dev
     }
 };
 
-export const analyzePrompt = async (prompt) => {
-    const targetModel = 'gemini-1.5-flash-001'; // 분석용은 가장 빠르고 안정적인 모델 사용
+export const analyzePrompt = async (prompt, modelId = 'gemini-3-pro-preview') => {
+    // 2026.01.30 기준 최신 모델 매핑 시스템 (Tier 1 & Preview 대응)
+    const modelMapping = {
+        'Gemini 3 Pro': 'gemini-3-pro-preview',
+        'Gemini 3 Flash': 'gemini-3-flash-preview',
+        'gemini-3-pro': 'gemini-3-pro-preview',
+        'gemini-3-flash': 'gemini-3-flash-preview',
+        'Gemini 2.0 Pro': 'gemini-2.0-pro-exp-02-05',
+        'Gemini 2.0 Flash': 'gemini-2.0-flash',
+        'Gemini 2.5 Pro': 'gemini-2.5-pro',
+        'Gemini 2.5 Flash': 'gemini-2.5-flash'
+    };
+
+    const targetModel = modelMapping[modelId] || modelId || 'gemini-3-pro-preview';
     const defaults = {
         serviceName: "New Project",
         coreValue: "Premium Experience",

@@ -1,5 +1,6 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,66 +8,52 @@
 
 @layer base {
   :root {
-    /* Toss Design System (TDS) Dark Theme */
-    --background: 220 5% 11%;
-    /* #1B1C1D */
+    /* Tech Innovation Theme Variables */
+    --background: 220 5% 7%;
+    /* Darker Gray #121212 */
     --foreground: 0 0% 100%;
-    /* #FFFFFF */
+    /* Pure White */
 
-    --card: 225 3% 18%;
-    /* #2C2C2E */
+    --card: 220 5% 12%;
+    /* #1E1E1E */
     --card-foreground: 0 0% 100%;
-    /* #FFFFFF */
 
-    --popover: 225 3% 18%;
-    /* #2C2C2E */
+    --popover: 220 5% 12%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 215 91% 58%;
-    /* #3182F6 (Toss Blue) */
+    --primary: 216 100% 50%;
+    /* Electric Blue #0066FF */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 4% 20%;
-    /* #333D4B (Muted Gray) */
-    --secondary-foreground: 216 10% 90%;
-    /* #E5E8EB */
+    --secondary: 220 5% 18%;
+    /* Dark Medium Gray */
+    --secondary-foreground: 180 100% 50%;
+    /* Neon Cyan accent for secondary text */
 
-    --muted: 220 4% 15%;
-    /* Background subtle */
-    --muted-foreground: 216 8% 72%;
-    /* #B0B8C1 (Toss Cool Gray) */
+    --muted: 220 5% 10%;
+    --muted-foreground: 220 5% 50%;
+    /* Medium Gray */
 
-    --accent: 215 91% 58%;
-    /* #3182F6 (Same as primary for consistency) */
-    --accent-foreground: 0 0% 100%;
+    --accent: 180 100% 50%;
+    /* Neon Cyan #00FFFF */
+    --accent-foreground: 220 5% 7%;
 
-    --destructive: 355 86% 60%;
-    /* #F04452 (Toss Red) */
+    --destructive: 0 100% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 4% 20%;
-    /* #333D4B */
-    --input: 220 4% 20%;
-    --ring: 215 91% 58%;
-    /* Focus Ring - Toss Blue */
+    --border: 220 5% 18%;
+    --input: 220 5% 18%;
+    --ring: 216 100% 50%;
+    /* Electric Blue focus ring */
 
-    --radius: 1.5rem;
-    /* 24px - Round shapes */
+    --radius: 0.75rem;
+    /* Slightly tighter radius for tech aesthetic */
 
-    /* Custom Toss Colors */
-    --toss-blue: #3182F6;
-    --toss-red: #F04452;
-    --toss-green: #35E88E;
-    /* Fluorescence Green for Positive */
-    --toss-grey-100: #F2F4F6;
-    --toss-grey-200: #E5E8EB;
-    --toss-grey-300: #D1D6DB;
-    --toss-grey-400: #B0B8C1;
-    --toss-grey-500: #8B95A1;
-    --toss-grey-600: #6B7684;
-    --toss-grey-700: #4E5968;
-    --toss-grey-800: #333D4B;
-    --toss-grey-900: #1B1C1D;
+    /* Theme Primary Colors */
+    --tech-blue: #0066FF;
+    --tech-cyan: #00FFFF;
+    --tech-dark: #1E1E1E;
+    --tech-black: #121212;
   }
 }
 
@@ -86,38 +73,38 @@
   h4,
   h5,
   h6 {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Google Sans', 'Product Sans', 'Plus Jakarta Sans', 'Outfit', sans-serif;
     letter-spacing: -0.02em;
+    font-weight: 700;
   }
 }
 
-/* Custom Utilities for 'Google Antigravity' aesthetic */
+/* Custom Utilities for Tech Innovation aesthetic */
 
 .gnb-floating {
-  /* Using a more static simple header for Antigravity, not floating glass pill */
-  @apply fixed top-0 left-0 w-full h-20 bg-white/90 backdrop-blur-sm flex items-center justify-between px-6 md:px-12 z-[1000];
+  @apply fixed top-0 left-0 w-full h-20 bg-background/80 backdrop-blur-xl flex items-center justify-between px-6 md:px-12 z-[100];
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .nav-item {
-  @apply text-[15px] font-medium text-slate-600 hover:text-black transition-colors px-3 py-2;
-}
-
-.nav-dropdown-trigger {
-  @apply flex items-center gap-1 cursor-pointer;
+  @apply text-[13px] font-bold tracking-widest text-muted-foreground hover:text-primary transition-all px-4 py-2 uppercase;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .antigravity-logo-text {
-  @apply font-medium text-[22px] tracking-tight text-slate-700 ml-2;
-  font-family: 'Outfit', sans-serif;
+  @apply font-black text-[20px] tracking-tighter text-foreground ml-2 uppercase;
+  font-family: 'Unbounded', sans-serif;
 }
 
-.btn-black-pill {
-  @apply bg-black text-white hover:bg-slate-800 rounded-full px-6 h-10 text-sm font-medium transition-all;
+.btn-primary-pill {
+  @apply bg-primary text-white hover:bg-primary/90 rounded-full px-8 h-12 text-xs font-bold transition-all uppercase tracking-widest;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .hero-title-ag {
-  @apply text-4xl md:text-5xl font-medium tracking-tight text-slate-900 mb-6;
-  font-family: 'Outfit', sans-serif;
+  @apply text-5xl md:text-7xl font-black tracking-tighter text-foreground mb-8 uppercase;
+  font-family: 'Unbounded', sans-serif;
+  line-height: 0.9;
 }
 
 /* Particle Canvas behind everything */
@@ -138,4 +125,74 @@ canvas {
 
 .animate-infinite-scroll {
   animation: infinite-scroll 40s linear infinite;
+}
+
+/* --- [Claude Skills] Premium Texture & Atmospheric Details --- */
+
+/* Film Grain / Noise Overlay */
+body::after {
+  content: "";
+  position: fixed;
+  top: -150%;
+  left: -150%;
+  width: 300%;
+  height: 300%;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  filter: contrast(120%) brightness(100%);
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 9999;
+  animation: noise-move 8s steps(10) infinite;
+}
+
+@keyframes noise-move {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  10% {
+    transform: translate(-5%, -5%);
+  }
+
+  20% {
+    transform: translate(-10%, 5%);
+  }
+
+  30% {
+    transform: translate(5%, -10%);
+  }
+
+  40% {
+    transform: translate(-5%, 15%);
+  }
+
+  50% {
+    transform: translate(-10%, 5%);
+  }
+
+  60% {
+    transform: translate(15%, 0);
+  }
+
+  70% {
+    transform: translate(0, 10%);
+  }
+
+  80% {
+    transform: translate(-15%, 0);
+  }
+
+  90% {
+    transform: translate(10%, 5%);
+  }
+
+  100% {
+    transform: translate(5%, 0);
+  }
+}
+
+/* Atmospheric Glow */
+.atmospheric-blur {
+  @apply fixed inset-0 pointer-events-none z-[1];
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
 }

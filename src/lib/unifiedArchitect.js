@@ -26,7 +26,7 @@ Task: [ANALYZE] Modular Data Generation
    - trendInsight: 도출된 데이터를 바탕으로 한 프로젝트 시사점 (2-3문장)
 
 3. Benchmark & Differentiation (경쟁 분석 및 차별화)
-   - comparativeAnalysis: 경쟁/유사 서비스의 UI/UX 패턴 및 기능 구현 방식 비교 (3-4개 서비스, 각 2-3문장)
+   - comparativeAnalysis: 경쟁/유사 서비스의 UI/UX 패턴 및 기능 구현 방식 비교 (3-4개 서비스, 각 2-3문장). 반드시 각 서비스의 대표 홈페이지 URL을 포함하십시오.
    - gapAnalysis: 경쟁사의 한계를 극복하는 우리만의 독보적 차별화 전략 (3-4개 USP)
    - benchmarkReference: 벤치마킹을 통해 도출된 핵심 성공 요인 (3-4개 KSF)
 
@@ -55,7 +55,7 @@ Task: [ANALYZE] Modular Data Generation
   },
   "benchmark": {
     "comparativeAnalysis": [
-      { "service": "string", "analysis": "string" },
+      { "service": "string", "analysis": "string", "url": "string (URL)" },
       ...
     ],
     "gapAnalysis": ["string", "string", ...],
@@ -126,7 +126,7 @@ export async function generateModularAnalysis(userInput) {
 
   const freshGenAI = new GoogleGenerativeAI(currentKey);
   const model = freshGenAI.getGenerativeModel({
-    model: 'gemini-1.5-flash-001',
+    model: 'gemini-2.0-flash',
     generationConfig: {
       temperature: 0.7,
       topP: 0.95,
@@ -178,8 +178,8 @@ export async function generateModularAnalysis(userInput) {
       },
       benchmark: {
         comparativeAnalysis: [
-          { service: "Market Leader A", analysis: "직관적인 내비게이션과 강력한 데이터 시각화 제공" },
-          { service: "Competitor B", analysis: "모바일 우선의 간결한 워크플로우를 통한 접근성 확보" }
+          { service: "Market Leader A", analysis: "직관적인 내비게이션과 강력한 데이터 시각화 제공", url: "https://toss.im" },
+          { service: "Competitor B", analysis: "모바일 우선의 간결한 워크플로우를 통한 접근성 확보", url: "https://www.apple.com" }
         ],
         gapAnalysis: ["실시간 피드백 시스템 강화", "개인화된 대시보드 경험 제공"],
         benchmarkReference: ["고대비 타이포그래피", "모듈형 카드 레이아웃"]

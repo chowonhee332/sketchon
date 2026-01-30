@@ -12,6 +12,9 @@ import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, 
 import { Button } from "@/components/ui/button";
 import creonLogo from '../assets/creon-logo.png';
 import creonLogoWhite from '../assets/creon-logo-white.png';
+import sketchonLogo from '../assets/sketchon_logo.png';
+import AIBorder from '../components/AIBorder';
+import CreonSidebar from '../components/CreonSidebar';
 
 const GeneratorPage = () => {
     const location = useLocation();
@@ -299,7 +302,8 @@ const GeneratorPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#0A0A0A] overflow-hidden font-['Inter']">
+        <div className="flex flex-col h-screen bg-[#070707] overflow-hidden font-['Pretendard_Variable'] selection:bg-primary/30">
+            {isLoading && <AIBorder />}
             {/* Header - Dark Mode */}
             {/* Header - Toss Dark Mode */}
             <header className="h-14 flex items-center justify-between bg-[#0A0A0A] z-20 text-white pl-0 pr-4">
@@ -307,6 +311,7 @@ const GeneratorPage = () => {
                     <Link to="/" className="text-slate-400 hover:text-white shrink-0 p-2 hover:bg-white/10 rounded-md transition-colors">
                         <ChevronLeft size={20} />
                     </Link>
+
 
                     <div className="flex-1 overflow-hidden">
                         <span className="text-sm font-bold text-white whitespace-nowrap truncate block">
@@ -442,7 +447,7 @@ const GeneratorPage = () => {
                             <PresentationBuilder
                                 analysisData={analysisData}
                                 selectedModules={selectedModules}
-                                generatedUIUrl={generatedCode ? 'data:text/html;base64,' + btoa(generatedCode) : null}
+                                generatedUIUrl={generatedCode ? 'data:text/html;base64,' + btoa(unescape(encodeURIComponent(generatedCode))) : null}
                             />
                         )}
 
@@ -522,51 +527,24 @@ const GeneratorPage = () => {
                     className={`flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out z-30`}
                     style={{ width: isCreonModalOpen ? `${panelWidth}px` : '0px', overflow: 'hidden' }}
                 >
-                    <div className="flex-1 flex flex-col bg-white overflow-hidden rounded-2xl shadow-xl border border-white/5 h-full">
-                        {/* Panel Header */}
-                        <div className="px-5 py-3 flex items-center justify-between bg-white border-b border-gray-100">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest leading-none mb-1">CREON</span>
-                                <span className="text-sm font-bold text-gray-800">Resources</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                                    <Search size={18} />
-                                </button>
-                                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                                    <ExternalLink size={18} />
-                                </button>
-                                <button
-                                    onClick={() => setIsCreonModalOpen(false)}
-                                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-                        </div>
+                    <div className="flex-1 flex flex-col bg-white overflow-hidden rounded-2xl shadow-xl border border-white/5 h-full relative">
+                        {/* Resize Handle (Google Style) - Moved outside or kept? Kept for resizing */}
+                        {isCreonModalOpen && (
+                            <div
+                                className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-50"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setIsResizing(true);
+                                }}
+                            />
+                        )}
 
-                        {/* Panel Content (Iframe) */}
-                        <div className="flex-1 relative bg-white">
-                            {isCreonModalOpen && (
-                                <iframe
-                                    src="https://creon-umber.vercel.app/"
-                                    title="Creon Service"
-                                    className={`w-full h-full border-none ${isResizing ? 'pointer-events-none' : ''}`}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                />
-                            )}
-
-                            {/* Resize Handle (Google Style) */}
-                            {isCreonModalOpen && (
-                                <div
-                                    className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/20 transition-colors z-50"
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setIsResizing(true);
-                                    }}
-                                />
-                            )}
-                        </div>
+                        {isCreonModalOpen && (
+                            <CreonSidebar
+                                onClose={() => setIsCreonModalOpen(false)}
+                                logo={creonLogo}
+                            />
+                        )}
                     </div>
                 </div>
 

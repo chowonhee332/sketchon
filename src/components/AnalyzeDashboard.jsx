@@ -208,52 +208,50 @@ const AnalyzeDashboard = ({ projectTitle, messages = [], selectedSection = 'all'
                                 badge="Market Analysis"
                             />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {[
-                                    {
-                                        name: "Friendli.ai",
-                                        desc: "생성형 AI 모델 서빙 플랫폼",
-                                        ui: "우측 인스펙터를 통한 파라미터 조절 직관성",
-                                        ux: "복잡한 로그 데이터의 실시간 시각화 우수",
-                                        tags: ["Control Panel", "Live Data"]
-                                    },
-                                    {
-                                        name: "Vercel SDK",
-                                        desc: "개발자 중심의 UI 스트리밍 라이브러리",
-                                        ui: "미니멀한 타이포그래피와 고대비 레이아웃",
-                                        ux: "배포 프로세스의 시각적 흐름 추적 용이",
-                                        tags: ["Minimal", "Work Flow"]
-                                    }
-                                ].map((comp, i) => (
+                                {(analysisData?.benchmark?.comparativeAnalysis || []).map((comp, i) => (
                                     <Card key={i} className="group relative overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#121212]">
-                                        <div className="flex items-start justify-between mb-6">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-white mb-1">{comp.name}</h3>
-                                                <p className="text-xs text-slate-500">{comp.desc}</p>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {comp.tags.map(t => <span key={t} className="text-[9px] bg-white/5 px-2 py-0.5 rounded border border-white/5 text-slate-400">{t}</span>)}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-4">
-                                            <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                    <span className="text-xs font-bold text-slate-300">UI적 측면</span>
+                                        <div className="relative z-10">
+                                            <div className="flex items-start justify-between mb-6">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-white mb-1">{comp.service}</h3>
+                                                    <p className="text-xs text-slate-500 line-clamp-2">{comp.analysis}</p>
                                                 </div>
-                                                <p className="text-xs text-slate-400 leading-relaxed">{comp.ui}</p>
+                                                {comp.url && (
+                                                    <a href={comp.url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                                                        <Globe size={14} />
+                                                    </a>
+                                                )}
                                             </div>
-                                            <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                                    <span className="text-xs font-bold text-slate-300">UX적 측면</span>
+
+                                            {/* Screenshot Area */}
+                                            <div className="mt-4 aspect-video rounded-xl bg-black/40 border border-white/10 overflow-hidden relative group-hover:border-blue-500/30 transition-all">
+                                                {comp.url ? (
+                                                    <img
+                                                        src={`https://api.microlink.io/?url=${encodeURIComponent(comp.url)}&screenshot=true&meta=false&embed=screenshot.url`}
+                                                        alt={`${comp.service} Screenshot`}
+                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = "https://placehold.co/600x400/1e1e1e/333333?text=No+Preview";
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 text-slate-600 gap-2">
+                                                        <ImageIcon size={24} />
+                                                        <span className="text-[10px] font-mono">NO URL PROVIDED</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Overlay Gradient */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+
+                                                <div className="absolute bottom-3 left-3 right-3">
+                                                    <div className="text-[10px] font-bold text-white mb-1 flex items-center gap-1.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                        Live Analysis
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-slate-400 leading-relaxed">{comp.ux}</p>
                                             </div>
-                                        </div>
-                                        {/* Mock Image Placeholder */}
-                                        <div className="mt-6 aspect-video rounded-xl bg-black/40 border border-white/10 flex items-center justify-center group-hover:border-blue-500/30 transition-colors overflow-hidden">
-                                            <div className="text-slate-700 font-mono text-[10px]">CRAWLED_SCREENSHOT_{i + 1}.PNG</div>
-                                            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
                                         </div>
                                     </Card>
                                 ))}

@@ -10,6 +10,8 @@ import { analyzePrompt, getGeminiKey, updateGenAIContent } from './lib/gemini';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import ProjectDrawer from './components/ProjectDrawer';
 import creonLogoWhite from './assets/creon-logo-white.png';
+import sketchonLogo from './assets/sketchon_logo.png';
+import AIBorder from './components/AIBorder';
 // Removed FeatureShowcase import as we are integrating it into the particle engine
 
 // --- Context & State Management ---
@@ -81,20 +83,20 @@ const SCROLL_HEIGHT = 12000; // Expanded for 12 sections (roughly 1000vh)
 const randomRange = (min, max) => Math.random() * (max - min) + min;
 
 // Generates points for a Torus (Dual Ring Logo)
-const generateTorus = (radius, tubeRadius, count, offsetAngle = 0) => {
+const generateTorus = (radius, tubeRadius, count, dispersion = 0.05) => {
     const points = [];
     for (let i = 0; i < count; i++) {
         const u = Math.random() * Math.PI * 2;
         const v = Math.random() * Math.PI * 2;
 
+        // Revert to Hollow Shell for cleaner lines as requested
         // Parametric Torus equation
         const x = (radius + tubeRadius * Math.cos(v)) * Math.cos(u);
         const y = (radius + tubeRadius * Math.cos(v)) * Math.sin(u);
         const z = tubeRadius * Math.sin(v);
 
         // Add "Dispersion" - jitter to make it less "perfectly smooth"
-        // Random offset based on the reference image (organic cloud style)
-        const jitter = radius * 0.22;
+        const jitter = radius * dispersion;
         const noiseX = (Math.random() - 0.5) * jitter;
         const noiseY = (Math.random() - 0.5) * jitter;
         const noiseZ = (Math.random() - 0.5) * jitter;
@@ -132,29 +134,40 @@ const ParticleEngine = ({ scrollYProgress }) => {
             const cy = h / 2;
             const activeCount = 10000;
 
+            // Adjusted to 90% of original scale (approx 0.315h)
             const ringRadius = h * 0.315;
-            const tubeRadius = h * 0.063;
-            const ring1 = generateTorus(ringRadius, tubeRadius, activeCount / 2);
-            const ring2 = generateTorus(ringRadius, tubeRadius, activeCount / 2);
+            const tubeRadius = h * 0.072;
+            // Use medium dispersion (0.12) to make rings look slightly scattered/organic
+            const ring1 = generateTorus(ringRadius, tubeRadius, activeCount / 2, 0.12);
+            const ring2 = generateTorus(ringRadius, tubeRadius, activeCount / 2, 0.12);
 
             // Apply a static tilt to ring2 to make them intersect
             const tiltAngle = Math.PI / 4; // 45 degrees
             const cosT = Math.cos(tiltAngle);
             const sinT = Math.sin(tiltAngle);
 
+            // Create X Shape: Ring 1 tilted +35deg, Ring 2 tilted -35deg
+            const angle1 = Math.PI / 6; // 30 degrees
+            const angle2 = -Math.PI / 6; // -30 degrees
+
+            const cos1 = Math.cos(angle1), sin1 = Math.sin(angle1);
+            const cos2 = Math.cos(angle2), sin2 = Math.sin(angle2);
+
             targets.current.phase0 = [
                 ...ring1.map(p => ({
-                    x: p.x,
-                    y: p.y,
+                    // Rotate Ring 1 around Z axis for X shape
+                    x: p.x * cos1 - p.y * sin1,
+                    y: p.x * sin1 + p.y * cos1,
                     z: p.z,
-                    rotType: 0, // Y-axis (Left-Right)
+                    rotType: 0,
                     color: { r: 255, g: 255, b: 255 }
                 })),
                 ...ring2.map(p => ({
-                    x: p.x,
-                    y: p.y * cosT - p.z * sinT,
-                    z: p.y * sinT + p.z * cosT,
-                    rotType: 1, // X-axis (Top-Bottom)
+                    // Rotate Ring 2 around Z axis opposite way
+                    x: p.x * cos2 - p.y * sin2,
+                    y: p.x * sin2 + p.y * cos2,
+                    z: p.z,
+                    rotType: 0, // Same rotation type so they spin together
                     color: { r: 255, g: 255, b: 255 }
                 }))
             ].map((p, i) => {
@@ -1408,6 +1421,7 @@ const Navbar = () => {
                 {/* Left: Logo */}
                 <div className="flex items-center gap-8 z-10">
                     <Link to="/" className="flex items-center gap-2 group pl-2">
+                        <img src={sketchonLogo} alt="Sketchon Logo" className="h-6 w-auto object-contain" />
                         <span className="text-[22px] font-['Outfit'] font-medium text-white tracking-tight text-white/90">Sketchon</span>
                     </Link>
                 </div>
@@ -1569,6 +1583,8 @@ const Navbar = () => {
     );
 };
 
+
+
 const LandingPage = () => {
     const { scrollYProgress } = useScroll();
     const navigate = useNavigate();
@@ -1693,9 +1709,7 @@ Constraints: ${finalData.techStack}
             <ParticleEngine scrollYProgress={scrollYProgress} />
             <Navbar />
             <ScrollToTop />
-
-
-
+            {isAnalyzing && <AIBorder />}
             {/* Hero Section (Phase 0) */}
             <Section className="z-10 text-center pt-32 pb-20">
                 <motion.div
@@ -1715,7 +1729,7 @@ Constraints: ${finalData.techStack}
                             <span className="absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75 animate-ping"></span>
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
                         </span>
-                        SKETCHON AI 2.0 • INTRODUCING THE NEW STANDARD
+                        <span>ANTIGRAVITY SKILLS UPDATE</span>
                     </motion.div>
 
                     {/* Main Title - Framer Style: "Build better Ideas, faster" - ALL WHITE */}
@@ -1731,7 +1745,7 @@ Constraints: ${finalData.techStack}
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder="Describe your product idea..."
-                                className="w-full bg-transparent border-none outline-none text-white/80 placeholder:text-white/30 text-[18px] font-light resize-none leading-relaxed h-16 mb-1 scrollbar-none"
+                                className="w-full bg-transparent border-none outline-none text-white/80 placeholder:text-white/30 text-[16px] font-light resize-none leading-relaxed h-16 mb-1 scrollbar-none"
                             />
 
                             {/* Attachment Chips */}
