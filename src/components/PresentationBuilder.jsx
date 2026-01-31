@@ -13,36 +13,45 @@ const SlideRenderer = ({ slide, slideNumber, totalSlides }) => {
             switch (section.type) {
                 case 'paragraph':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">{section.label}</h3>
-                            <p className="text-sm text-slate-600 leading-relaxed">{value}</p>
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">{section.label}</h3>
+                            <p className="text-base text-slate-300 leading-relaxed max-w-3xl border-l border-blue-500/30 pl-4">{value}</p>
                         </div>
                     );
 
                 case 'bullets':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <ul className="space-y-2">
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">{section.label}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {value.map((item, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                                        <span className="text-blue-600 mt-1">•</span>
-                                        <span>{typeof item === 'object' ? JSON.stringify(item) : item}</span>
-                                    </li>
+                                    <div key={i} className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                        <span className="text-sm text-slate-300">{typeof item === 'object' ? JSON.stringify(item) : item}</span>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     );
 
                 case 'comparison':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">{section.label}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 {value.map((comp, i) => (
-                                    <div key={i} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                        <h4 className="font-bold text-slate-800 mb-1">{comp.service}</h4>
-                                        <p className="text-xs text-slate-600">{comp.analysis}</p>
+                                    <div key={i} className="flex flex-col bg-[#161618] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+                                        <div className="p-3 bg-blue-500/20 text-center border-b border-white/5">
+                                            <h4 className="font-bold text-blue-400 text-xs">{comp.service}</h4>
+                                        </div>
+                                        <div className="p-4 flex-1">
+                                            <p className="text-[11px] text-slate-400 leading-relaxed text-center italic">"{comp.analysis}"</p>
+                                        </div>
+                                        {comp.url && comp.url !== "#" && (
+                                            <div className="px-4 py-2 bg-black/40 text-[9px] text-slate-600 text-center font-mono truncate">
+                                                {comp.url}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -51,37 +60,51 @@ const SlideRenderer = ({ slide, slideNumber, totalSlides }) => {
 
                 case 'personas':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            {value.map((persona, i) => (
-                                <div key={i} className="mb-4 p-4 bg-slate-50 rounded-lg">
-                                    <h4 className="font-bold text-slate-800 mb-2">{persona.persona}</h4>
-                                    <ul className="space-y-1">
-                                        {persona.painPoints?.map((point, j) => (
-                                            <li key={j} className="text-xs text-slate-600 flex items-start gap-2">
-                                                <span className="text-red-500">▸</span>
-                                                {point}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">{section.label}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {value.map((persona, i) => (
+                                    <div key={i} className="relative p-6 bg-gradient-to-br from-white/5 to-transparent rounded-3xl border border-white/10 shadow-xl overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <ImageIcon size={64} className="text-blue-500" />
+                                        </div>
+                                        <h4 className="font-bold text-white text-lg mb-4 flex items-center gap-2">
+                                            <div className="w-2 h-8 bg-blue-500 rounded-full" />
+                                            {persona.persona}
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {persona.painPoints?.map((point, j) => (
+                                                <div key={j} className="text-xs text-slate-400 flex items-start gap-2 bg-black/30 p-2 rounded-xl">
+                                                    <span className="text-blue-500 font-bold">Q.</span>
+                                                    {point}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     );
 
                 case 'journey':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <div className="flex items-center gap-2 overflow-x-auto">
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-6">{section.label}</h3>
+                            <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide">
                                 {value.map((step, i) => (
                                     <React.Fragment key={i}>
-                                        <div className="flex-shrink-0 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="text-xs font-bold text-blue-800">{i + 1}</div>
-                                            <div className="text-xs text-slate-600 mt-1 w-24">{step}</div>
+                                        <div className="flex-shrink-0 w-44 p-4 bg-white/5 rounded-2xl border border-white/10 relative group hover:border-blue-500/50 transition-all">
+                                            <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg border-4 border-[#070707]">
+                                                {i + 1}
+                                            </div>
+                                            <div className="text-xs font-bold text-white mb-2 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{step.split(' ')[0]}</div>
+                                            <div className="text-[10px] text-slate-500 leading-tight h-12 overflow-hidden line-clamp-3">{step}</div>
                                         </div>
                                         {i < value.length - 1 && (
-                                            <div className="text-blue-400">→</div>
+                                            <div className="flex-shrink-0 w-8 flex items-center justify-center">
+                                                <div className="w-full h-[1px] bg-gradient-to-r from-blue-500/50 to-transparent" />
+                                                <ChevronRight size={14} className="text-blue-500/50 -ml-2" />
+                                            </div>
                                         )}
                                     </React.Fragment>
                                 ))}
@@ -91,17 +114,19 @@ const SlideRenderer = ({ slide, slideNumber, totalSlides }) => {
 
                 case 'colorPalette':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <div className="flex gap-3">
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-6">{section.label}</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                                 {Object.entries(value).map(([name, color]) => (
-                                    <div key={name} className="flex flex-col items-center">
+                                    <div key={name} className="flex flex-col items-center group">
                                         <div
-                                            className="w-16 h-16 rounded-lg border-2 border-slate-300 shadow-sm"
+                                            className="w-20 h-20 rounded-full border-4 border-white/5 shadow-2xl transition-transform group-hover:scale-110 duration-300 flex items-center justify-center relative overflow-hidden"
                                             style={{ backgroundColor: color }}
-                                        />
-                                        <div className="text-xs text-slate-600 mt-2 font-mono">{color}</div>
-                                        <div className="text-xs text-slate-400">{name}</div>
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                                        </div>
+                                        <div className="text-[10px] text-white font-mono mt-3 px-2 py-1 bg-white/5 rounded-lg">{color}</div>
+                                        <div className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">{name}</div>
                                     </div>
                                 ))}
                             </div>
@@ -110,9 +135,10 @@ const SlideRenderer = ({ slide, slideNumber, totalSlides }) => {
 
                 case 'architecture':
                     return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <div className="p-4 bg-slate-900 rounded-lg font-mono text-xs text-green-400">
+                        <div key={idx} className="mb-8">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">{section.label}</h3>
+                            <div className="p-6 bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 font-mono text-[11px] text-green-400 leading-relaxed shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
                                 <pre className="whitespace-pre-wrap">{value.structure || JSON.stringify(value, null, 2)}</pre>
                             </div>
                         </div>
@@ -121,67 +147,64 @@ const SlideRenderer = ({ slide, slideNumber, totalSlides }) => {
                 case 'image':
                     if (value) {
                         return (
-                            <div key={idx} className="mb-6">
-                                <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                                <div className="aspect-video bg-slate-100 rounded-lg border border-slate-300 overflow-hidden">
+                            <div key={idx} className="mb-8">
+                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">{section.label}</h3>
+                                <div className="aspect-video bg-black/40 rounded-3xl border border-white/10 overflow-hidden shadow-2xl relative group">
                                     <img src={value} alt={section.label} className="w-full h-full object-contain" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             </div>
                         );
                     }
                     return null;
 
-                case 'contact':
-                    return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">{section.label}</h3>
-                            <div className="space-y-2 text-sm text-slate-600">
-                                {value.email && <div>Email: {value.email}</div>}
-                                {value.phone && <div>Phone: {value.phone}</div>}
-                            </div>
-                        </div>
-                    );
-
                 default:
-                    return (
-                        <div key={idx} className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">{section.label}</h3>
-                            <pre className="text-xs text-slate-600 whitespace-pre-wrap">
-                                {JSON.stringify(value, null, 2)}
-                            </pre>
-                        </div>
-                    );
+                    return null;
             }
         });
     };
 
     return (
-        <div className="aspect-video w-full max-w-4xl bg-white text-black shadow-2xl rounded-sm p-12 relative flex flex-col">
-            {/* Title */}
-            <div className="mb-6">
-                <h1 className="text-4xl font-bold font-['Outfit'] text-slate-900 mb-2">
+        <div className="aspect-video w-full max-w-5xl bg-[#070707] text-white shadow-[0_0_100px_rgba(0,0,0,0.5)] rounded-sm p-16 relative flex flex-col overflow-hidden select-none group">
+            {/* Background Accents (Google Antigravity Style) */}
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+            {/* Header / Design Chip */}
+            <div className="mb-10 text-center relative z-10">
+                <div className="inline-block px-3 py-1 bg-white/5 border border-white/10 backdrop-blur-md rounded-full text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 shadow-xl">
+                    {slide.dataSource ? slide.dataSource.replace(/([A-Z])/g, ' $1').toUpperCase() : 'SKETCHON AI PROPOSAL'}
+                </div>
+                <h1 className="text-5xl font-extrabold font-['Outfit'] text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight leading-tight">
                     {slide.title}
                 </h1>
                 {slide.subtitle && (
-                    <p className="text-sm text-slate-500">{slide.subtitle}</p>
+                    <p className="text-base text-slate-500 mt-2 font-medium">{slide.subtitle}</p>
                 )}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide relative z-10 px-4">
                 {renderContent()}
             </div>
 
             {/* Footer */}
-            <div className="mt-8 flex justify-between items-end border-t border-slate-200 pt-4">
-                <div className="text-xs text-slate-400">Sketchon AI Proposal</div>
-                <div className="text-xs font-bold text-slate-900">
-                    {slideNumber} / {totalSlides}
+            <div className="mt-8 flex justify-between items-end border-t border-white/10 pt-6 relative z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-xs">SK</div>
+                    <div className="text-[10px] font-medium text-slate-500 tracking-wider">
+                        PREMIUM AI DESIGN AGENT <br />
+                        <span className="text-slate-700 italic">Antigravity Engine Powered</span>
+                    </div>
+                </div>
+                <div className="text-sm font-mono font-bold text-slate-600">
+                    P. <span className="text-blue-500">{slideNumber.toString().padStart(2, '0')}</span> / {totalSlides.toString().padStart(2, '0')}
                 </div>
             </div>
         </div>
     );
 };
+
 
 const PresentationBuilder = ({ analysisData = null, selectedModules = [], generatedUIUrl = null }) => {
     const [selectedSlide, setSelectedSlide] = useState(0);
@@ -247,9 +270,9 @@ const PresentationBuilder = ({ analysisData = null, selectedModules = [], genera
             </div>
 
             {/* Main Editor Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#1B1C1D]">
+            <div className="flex-1 flex flex-col min-w-0 bg-[#070707]">
                 {/* Toolbar */}
-                <div className="h-14 border-b border-[#333D4B] flex items-center justify-between px-6 bg-[#2C2C2E] shrink-0">
+                <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-[#0A0A0A] shrink-0">
                     <div className="flex items-center gap-2">
                         <button className="p-2 hover:bg-[#333D4B] rounded-lg text-[#B0B8C1] hover:text-white transition-colors">
                             <Plus size={18} />
@@ -277,7 +300,8 @@ const PresentationBuilder = ({ analysisData = null, selectedModules = [], genera
                 </div>
 
                 {/* Slide Viewport */}
-                <div className="flex-1 overflow-auto p-12 bg-[#1B1C1D] flex items-start justify-center custom-scrollbar">
+                <div className="flex-1 overflow-auto p-12 bg-[#070707] flex items-start justify-center custom-scrollbar relative">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05)_0%,transparent_70%)] pointer-events-none" />
                     <SlideRenderer
                         slide={slides[selectedSlide]}
                         slideNumber={selectedSlide + 1}

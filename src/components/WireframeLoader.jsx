@@ -24,7 +24,7 @@ const DrawingLine = ({ d, delay, duration = 1.5 }) => (
     />
 );
 
-const WireframeLoader = ({ deviceType = 'mobile' }) => {
+const WireframeLoader = ({ deviceType = 'mobile', showText = true }) => {
     const isMobile = deviceType === 'mobile';
     const [messageIndex, setMessageIndex] = useState(0);
 
@@ -98,33 +98,35 @@ const WireframeLoader = ({ deviceType = 'mobile' }) => {
             </motion.svg>
 
             {/* Premium Loading Message - Cycling with AnimatePresence */}
-            <div className="absolute bottom-10 flex flex-col items-center gap-2 h-20">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={messageIndex}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.8 }}
-                        className="flex flex-col items-center h-full justify-center"
-                    >
-                        <span className="text-[16px] font-bold text-slate-300 tracking-[0.2em] uppercase text-center max-w-[500px]">
-                            {messages[messageIndex]}
-                        </span>
-                    </motion.div>
-                </AnimatePresence>
-
-                <div className="mt-4 flex gap-1">
-                    {[0, 1, 2].map((i) => (
+            {showText && (
+                <div className="absolute bottom-10 flex flex-col items-center gap-2 h-20">
+                    <AnimatePresence mode="wait">
                         <motion.div
-                            key={i}
-                            className="w-1 h-1 bg-blue-500 rounded-full"
-                            animate={{ opacity: [0.2, 1, 0.2] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                        />
-                    ))}
+                            key={messageIndex}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.8 }}
+                            className="flex flex-col items-center h-full justify-center"
+                        >
+                            <span className="text-[16px] font-bold text-slate-300 tracking-[0.2em] uppercase text-center max-w-[500px]">
+                                {messages[messageIndex]}
+                            </span>
+                        </motion.div>
+                    </AnimatePresence>
+
+                    <div className="mt-4 flex gap-1">
+                        {[0, 1, 2].map((i) => (
+                            <motion.div
+                                key={i}
+                                className="w-1 h-1 bg-blue-500 rounded-full"
+                                animate={{ opacity: [0.2, 1, 0.2] }}
+                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Antigravity Field Effect */}
             <div className="absolute inset-0 bg-blue-500/5 blur-[120px] rounded-full z-[-1]" />

@@ -237,25 +237,46 @@ const ChatSidebar = ({ messages, onSendMessage, isLoading, currentModel, onModel
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="mb-3 flex items-center justify-between p-2 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"
+                            className="mb-3 p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl overflow-hidden"
                         >
-                            <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-indigo-500/20 rounded-md">
-                                    <Maximize2 size={14} className="text-indigo-400" />
-                                </div>
-                                <div>
-                                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Focus Area Active</div>
-                                    <div className="text-[10px] text-slate-400 font-mono">
-                                        {Math.round(selectedArea.width)}x{Math.round(selectedArea.height)} at ({Math.round(selectedArea.x)}, {Math.round(selectedArea.y)})
+                            <div className="flex items-start gap-3">
+                                {selectedArea?.snapshot ? (
+                                    <div className="w-20 h-20 rounded-xl border border-white/10 overflow-hidden bg-black/40 shrink-0 shadow-lg">
+                                        <img
+                                            src={selectedArea.snapshot}
+                                            alt="Area Snapshot"
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
+                                ) : (
+                                    <div className="p-3 bg-indigo-500/20 rounded-xl">
+                                        <Maximize2 size={20} className="text-indigo-400" />
+                                    </div>
+                                )}
+                                <div className="flex-1 pt-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Focus Area Active</div>
+                                        <button
+                                            onClick={onClearSelection}
+                                            className="p-1 hover:bg-white/10 rounded-md text-slate-500 hover:text-white transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-mono mb-2">
+                                        {Math.round(selectedArea.width)}x{Math.round(selectedArtboard ? selectedArea.height : selectedArea.height)} at ({Math.round(selectedArea.x)}, {Math.round(selectedArea.y)})
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const elHint = selectedArea.html ? " (Element detected)" : "";
+                                            setInput(`Selected Area${elHint}: `);
+                                        }}
+                                        className="text-[11px] font-semibold text-indigo-300 hover:text-indigo-200 flex items-center gap-1 transition-colors"
+                                    >
+                                        ✏️ Edit this area
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                onClick={onClearSelection}
-                                className="p-1.5 hover:bg-white/10 rounded-md text-slate-500 hover:text-white transition-colors"
-                            >
-                                <X size={14} />
-                            </button>
                         </motion.div>
                     ) : null}
                 </AnimatePresence>

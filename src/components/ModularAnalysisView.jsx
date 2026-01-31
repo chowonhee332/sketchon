@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, Circle, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { CheckCircle, Circle, ChevronDown, ChevronUp, Copy, Check, Globe, ExternalLink, Image as ImageIcon } from 'lucide-react';
 
 const ModuleCard = ({ category, data, selected, onToggle, icon: Icon, color }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -16,6 +16,56 @@ const ModuleCard = ({ category, data, selected, onToggle, icon: Icon, color }) =
 
         const isArray = Array.isArray(content);
         const isObject = typeof content === 'object' && !isArray;
+
+        // Special handling for Benchmark Comparative Analysis
+        if (title.toLowerCase().includes('comparative analysis') && isArray) {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {content.map((item, idx) => (
+                        <div key={idx} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden group hover:border-[#3182F6]/30 transition-all">
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h5 className="font-bold text-white text-sm">{item.service}</h5>
+                                    {item.url && item.url !== "#" && (
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors">
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    )}
+                                </div>
+                                <p className="text-xs text-white/60 mb-4 line-clamp-2">{item.analysis}</p>
+
+                                {/* Screenshot Area with Microlink integration */}
+                                <div className="aspect-video bg-black/40 rounded-lg overflow-hidden relative border border-white/10">
+                                    {item.url && item.url !== "#" ? (
+                                        <>
+                                            <img
+                                                src={`https://api.microlink.io/?url=${encodeURIComponent(item.url)}&screenshot=true&meta=false&embed=screenshot.url`}
+                                                alt={item.service}
+                                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "https://placehold.co/600x400/1e1e1e/333333?text=Preview+Not+Available";
+                                                }}
+                                            />
+                                            <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-1.5 backdrop-blur-sm">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                <span className="text-[10px] font-bold text-white uppercase tracking-tighter">Live Analysis</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-white/20 gap-2">
+                                            <ImageIcon size={20} />
+                                            <span className="text-[10px] uppercase font-bold tracking-widest">No Preview URL</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
 
         return (
             <div className="mb-4">

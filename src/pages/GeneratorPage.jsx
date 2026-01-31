@@ -8,6 +8,7 @@ import ProjectInputModal from '../components/ProjectInputModal';
 import AnalysisProgress from '../components/AnalysisProgress';
 import { v0 } from '../lib/gemini';
 import { generateModularAnalysis, buildUIPrompt } from '../lib/unifiedArchitect';
+import { applyPatch } from '../lib/patching';
 import { ChevronLeft, Share2, Download, Zap, Monitor, Tablet, Smartphone, Menu, PanelLeftClose, PanelLeftOpen, Edit3, CircleUser, Layout, Compass, Target, Users, Layers, Settings, HelpCircle, Plus, Search, ExternalLink, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import creonLogo from '../assets/creon-logo.png';
@@ -36,6 +37,7 @@ const GeneratorPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
     const [isCreonModalOpen, setIsCreonModalOpen] = useState(false);
+    const [isCreonSessionActive, setIsCreonSessionActive] = useState(false);
     const [tempTitle, setTempTitle] = useState('');
     const [analyzeSubTab, setAnalyzeSubTab] = useState('all');
 
@@ -48,10 +50,12 @@ const GeneratorPage = () => {
 
     const [projectTitle, setProjectTitle] = useState('Untitled Project');
     const hasInitialLoaded = React.useRef(false);
-    const [panelWidth, setPanelWidth] = useState(320);
+    const [panelWidth, setPanelWidth] = useState(800);
     const [isResizing, setIsResizing] = useState(false);
     const [projectId, setProjectId] = useState(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [zoom, setZoom] = useState(0.6);
+    const [interactionMode, setInteractionMode] = useState('select'); // 'select' | 'pan'
 
     // Initial load & ID management
     // Initial load useEffect moved below to access handleAnalysisSubmit
@@ -208,7 +212,10 @@ const GeneratorPage = () => {
         const platform = searchParams.get('platform');
         const model = searchParams.get('model');
 
-        if (platform) setDeviceType(platform);
+        if (platform) {
+            setDeviceType(platform);
+            setViewMode(platform === 'mobile' ? 'mobile' : 'desktop');
+        }
         if (model) setCurrentModel(model);
 
         // If it's a different project than current one, or if it's the first load
@@ -237,17 +244,54 @@ const GeneratorPage = () => {
                     const coreTask = searchParams.get('task');
                     const style = searchParams.get('style');
                     const systemPrompt = searchParams.get('sys');
+                    const assetSubject = searchParams.get('assetSubject');
 
                     setProjectTitle(serviceName || (query.length > 20 ? query.substring(0, 20) + '...' : query));
 
-                    // Directly trigger analysis with DETAILED context
-                    handleAnalysisSubmit({
-                        keyword: query,
-                        projectType: serviceName || (platform === 'mobile' ? 'Mobile App' : 'Web Service'),
-                        targetUser: 'Extracted from Blueprint',
-                        goals: coreTask || `Successful Project Launch`,
-                        notes: `${systemPrompt ? `[Expert Persona]: ${systemPrompt}. ` : ''}Visual Style: ${style || 'Premium'}.`
-                    });
+                    // PHASE 4: SEQUENTIAL GENERATION PIPELINE
+                    const initiateGeneration = async () => {
+                        let generatedAssetUrl = null;
+
+                        // Step 1: Creative Director (Asset Generation)
+                        if (assetSubject) {
+                            setIsLoading(true);
+                            // Visual feedback for Asset Generation
+                            setMessages(prev => ({
+                                ...prev,
+                                ui: [...(prev.ui || []), {
+                                    role: 'assistant',
+                                    content: `🎨 **Creative Director (The Artist)**\n\nDesigning custom 3D asset for: *"${assetSubject}"*...`
+                                }]
+                            }));
+
+                            // Simulate Generation Time (Creative Process)
+                            await new Promise(r => setTimeout(r, 2000));
+
+                            // Mock Result (In production, this would be the NanoBanana V0 call)
+                            generatedAssetUrl = `https://placehold.co/600x600/2962ff/FFF?text=${encodeURIComponent(assetSubject)}`;
+
+                            setMessages(prev => ({
+                                ...prev,
+                                ui: [...prev.ui, {
+                                    role: 'assistant',
+                                    content: `✅ **Asset Created**\n\nPassing to Sketon...`,
+                                    parts: [{ text: `Asset URL: ${generatedAssetUrl}` }]
+                                }]
+                            }));
+                        }
+
+                        // Step 2: Sketon (Analysis & UI Generation)
+                        handleAnalysisSubmit({
+                            keyword: query,
+                            projectType: serviceName || (platform === 'mobile' ? 'Mobile App' : 'Web Service'),
+                            targetUser: 'Extracted from Blueprint',
+                            goals: coreTask || `Successful Project Launch`,
+                            // Inject specific instruction about the asset into the notes/context
+                            notes: `${systemPrompt ? `[Expert Persona]: ${systemPrompt}. ` : ''}Visual Style: ${style || 'Premium'}.${generatedAssetUrl ? `\n\n[MANDATORY INSTRUCTION]: You MUST integrate the generated 3D asset into the Hero Section. Use this URL: "${generatedAssetUrl}" inside an <img> tag with class "w-32 h-32 object-contain".` : ''}`
+                        });
+                    };
+
+                    initiateGeneration();
                 }
             }
             hasInitialLoaded.current = true;
@@ -284,6 +328,11 @@ const GeneratorPage = () => {
             parts: [{ text: msg.content }]
         }));
 
+        // Fix: Remove leading model messages to comply with Gemini API requirements (First content must be user)
+        while (history.length > 0 && history[0].role === 'model') {
+            history.shift();
+        }
+
         setMessages(prev => ({
             ...prev,
             [targetTab]: [...(prev[targetTab] || []), newUserMessage]
@@ -299,10 +348,25 @@ const GeneratorPage = () => {
         const contextInput = contextPrefix + input;
 
         try {
-            const result = await v0(contextInput, history, modelId, generationType, attachments);
+            const isRefinement = !!(selectedArea && selectedArea.html);
+            const targetHtml = isRefinement ? selectedArea.html : null;
+
+            const result = await v0(contextInput, history, modelId, generationType, attachments, isRefinement, targetHtml);
 
             if (result.code) {
-                setGeneratedCode(result.code);
+                if (isRefinement && generatedCode) {
+                    // 🎯 SMART PATCHING: Replace only the relevant section using robust utility
+                    console.log("Applying smart patch to selected area...");
+                    try {
+                        const patchedCode = applyPatch(generatedCode, targetHtml, result.code);
+                        setGeneratedCode(patchedCode);
+                    } catch (patchError) {
+                        console.error("Smart patch failed, falling back to full replacement:", patchError);
+                        setGeneratedCode(result.code);
+                    }
+                } else {
+                    setGeneratedCode(result.code);
+                }
             }
 
             const aiMessage = {
@@ -336,14 +400,23 @@ const GeneratorPage = () => {
             const htmlData = e.dataTransfer.getData('text/html');
             const urlData = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('url');
 
+            // Context Prefix for Drop
+            let dropContext = "";
+            let instructionPrefix = "";
+
+            if (selectedArea) {
+                dropContext = `[AREA: ${Math.round(selectedArea.width)}x${Math.round(selectedArea.height)} at ${Math.round(selectedArea.x)},${Math.round(selectedArea.y)}] `;
+                instructionPrefix = "REPLACE the content within this selected area with this image. maintain the surrounding layout. ";
+            }
+
             if (htmlData) {
                 const doc = new DOMParser().parseFromString(htmlData, 'text/html');
                 const img = doc.querySelector('img');
                 if (img && img.src) {
                     const isCreonAsset = img.dataset.creonAsset === 'true' || img.src.includes('data:image');
                     const promptText = isCreonAsset
-                        ? `[Creon Asset] 사용자가 Creon에서 고품질 3D 에셋을 드래그하여 배치했습니다. 이 아이콘을 현재 UI 컨셉에 맞춰서 최적의 위치(예: 히어로 섹션, 메인 아이콘 등)에 배치하고, 디자인의 완성도를 높여주세요. 이미지 소스: "${img.src}"`
-                        : `I just dragged this image from another window into the canvas. Please incorporate this image into the design using this source: "${img.src}"`;
+                        ? `${dropContext}[Creon Asset] ${instructionPrefix}Use this high-quality 3D asset from Creon. Image source: "${img.src}"`
+                        : `${dropContext}I just dragged this image into the canvas. ${instructionPrefix}Please incorporate this image using this source: "${img.src}"`;
 
                     handleSendMessage(promptText, currentModel);
                     return;
@@ -362,7 +435,7 @@ const GeneratorPage = () => {
                         const imageSource = `data:${mimeType};base64,${base64Data}`;
 
                         handleSendMessage(
-                            `사용자가 로컬 이미지를 드롭했습니다. 이 이미지를 분석하여 UI 디자인의 적절한 위치에 <img> 태그(src: "${imageSource}")로 삽입해 주세요.`,
+                            `${dropContext}User dropped a local image. ${instructionPrefix}Analyze this image and insert it using an <img> tag (src: "${imageSource}").`,
                             currentModel,
                             undefined,
                             [{ base64: base64Data, type: mimeType }]
@@ -377,7 +450,7 @@ const GeneratorPage = () => {
                 // Some browsers might provide multiple URLs separated by newlines
                 const firstUrl = urlData.split('\n')[0].trim();
                 handleSendMessage(
-                    `I just dragged this image URL into the canvas. Please include it in the design: "${firstUrl}"`,
+                    `${dropContext}I just dragged this image URL into the canvas. ${instructionPrefix}Please include it: "${firstUrl}"`,
                     currentModel
                 );
                 return;
@@ -387,7 +460,7 @@ const GeneratorPage = () => {
             const textData = e.dataTransfer.getData('text/plain');
             if (textData && (textData.startsWith('http') || textData.includes('data:image'))) {
                 handleSendMessage(
-                    `I just dragged this image into the canvas. Please include it: "${textData}"`,
+                    `${dropContext}I just dragged this image into the canvas. ${instructionPrefix}Please include it: "${textData}"`,
                     currentModel
                 );
                 return;
@@ -427,10 +500,13 @@ const GeneratorPage = () => {
             {/* Header - Toss Dark Mode */}
             <header className="h-14 flex items-center justify-between bg-[#0A0A0A] z-20 text-white pl-0 pr-4">
                 <div className="flex items-center h-full px-4 gap-3 w-[280px] shrink-0 transition-all duration-300 ease-in-out">
-                    <Link to="/" className="text-slate-400 hover:text-white shrink-0 p-2 hover:bg-white/10 rounded-md transition-colors">
-                        <ChevronLeft size={20} />
+                    <Link to="/" className="flex items-center gap-2 group text-slate-400 hover:text-white transition-colors">
+                        <div className="p-1.5 rounded-lg group-hover:bg-white/10 transition-colors">
+                            <ChevronLeft size={20} />
+                        </div>
                     </Link>
 
+                    <div className="h-4 w-[1px] bg-white/10 mx-2" />
 
                     <div className="flex-1 overflow-hidden">
                         <span className="text-sm font-bold text-white whitespace-nowrap truncate block">
@@ -653,6 +729,11 @@ const GeneratorPage = () => {
                                 isLoading={isLoading}
                                 onDrop={handleCanvasDrop}
                                 onDragOver={handleDragOver}
+                                zoom={zoom}
+                                onZoomChange={setZoom}
+                                interactionMode={interactionMode}
+                                onInteractionChange={setInteractionMode}
+                                onApply={handleSendToDelivery}
                             />
                         </div>
                     </div>
@@ -677,9 +758,13 @@ const GeneratorPage = () => {
                             </div>
                         )}
 
-                        {isCreonModalOpen && (
+                        {/* Keep mounted if session is active, even if closed (width 0) */}
+                        {isCreonSessionActive && (
                             <CreonSidebar
-                                onClose={() => setIsCreonModalOpen(false)}
+                                onClose={() => {
+                                    setIsCreonModalOpen(false);
+                                    setIsCreonSessionActive(false); // Fully reset on X click
+                                }}
                                 logo={creonLogo}
                             />
                         )}
@@ -693,7 +778,10 @@ const GeneratorPage = () => {
                         {[1, 2, 3, 4].map((i) => (
                             <button
                                 key={i}
-                                onClick={() => setIsCreonModalOpen(!isCreonModalOpen)}
+                                onClick={() => {
+                                    if (!isCreonModalOpen) setIsCreonSessionActive(true); // Start session on open
+                                    setIsCreonModalOpen(!isCreonModalOpen);
+                                }}
                                 className={`w-9 h-9 rounded-xl overflow-hidden hover:scale-110 transition-all p-2 flex items-center justify-center group ${isCreonModalOpen && i === 1 ? 'bg-white/10 ring-2 ring-blue-500' : 'bg-transparent'}`}
                             >
                                 <img src={creonLogo} alt={`Creon ${i}`} className={`w-full h-full object-contain transition-opacity ${isCreonModalOpen && i === 1 ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />

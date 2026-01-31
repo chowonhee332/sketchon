@@ -202,9 +202,27 @@ const htmlContent = `
             <div class="inspector-section">
               <h3>Style Reference (Creon 3D)</h3>
               <div class="reference-images-container">
-                <img src="/assets/references/creon_ref_1.png" alt="Ref 1" class="ref-img selected" />
-                <img src="/assets/references/creon_ref_2.png" alt="Ref 2" class="ref-img" />
-                <img src="/assets/references/creon_ref_3.png" alt="Ref 3" class="ref-img" />
+                <img src="/src/assets/reference/reference_1.png" alt="Ref 1" class="ref-img selected" />
+                <img src="/src/assets/reference/reference_2.png" alt="Ref 2" class="ref-img" />
+                <img src="/src/assets/reference/reference_3.png" alt="Ref 3" class="ref-img" />
+              </div>
+            </div>
+
+            <div class="inspector-section">
+              <h3>Base System Prompt</h3>
+              <div class="base-prompt-container">
+                <textarea id="base-system-prompt" rows="10" readonly></textarea>
+                <div class="nano-controls" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <button id="btn-generate-nanobanana" class="primary-btn" style="background: linear-gradient(135deg, #FFD700, #FFAA00); color: #000; font-weight: bold;">
+                        <span class="material-symbols-outlined">auto_awesome</span>
+                        Generate with NanoBanana
+                    </button>
+                    <div id="nano-result-container" style="min-height: 200px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                        <div class="placeholder-text" style="color: #999; font-size: 12px;">Result will appear here</div>
+                        <img id="nano-generated-image" style="width: 100%; height: auto; display: none;" />
+                        <div class="loader" id="nano-loader" style="display: none;"></div>
+                    </div>
+                </div>
               </div>
             </div>
             <div class="inspector-section">

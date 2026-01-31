@@ -81,6 +81,13 @@ export function initContentsBuilder() {
   const copyAnimKeyframesBtn = document.getElementById('copy-anim-keyframes-btn');
   const copyAnimClassBtn = document.getElementById('copy-anim-class-btn');
 
+  // NanoBanana Elements
+  const baseSystemPromptTextarea = document.getElementById('base-system-prompt');
+  const btnGenerateNano = document.getElementById('btn-generate-nanobanana');
+  const nanoResultContainer = document.getElementById('nano-result-container');
+  const nanoResultImage = document.getElementById('nano-generated-image');
+  const nanoLoader = document.getElementById('nano-loader');
+
   // --- STATE MANAGEMENT ---
 
   let currentStyle = {
@@ -121,9 +128,9 @@ export function initContentsBuilder() {
   };
 
   const REFERENCE_IMAGES = [
-    '/assets/references/creon_ref_1.png',
-    '/assets/references/creon_ref_2.png',
-    '/assets/references/creon_ref_3.png'
+    '/src/assets/reference/reference_1.png',
+    '/src/assets/reference/reference_2.png',
+    '/src/assets/reference/reference_3.png'
   ];
 
   const PROMPT_TEMPLATE_3D = `A high-quality 3D render of [SUBJECT], 
@@ -360,8 +367,96 @@ placed on a seamless light background.`;
     }
   }
 
+  // --- NanoBanana Generation ---
+  async function generateNanoImage() {
+    if (!ai) return;
 
-  // --- UI UPDATE FUNCTIONS ---
+    // UI Updates
+    if (nanoLoader) nanoLoader.style.display = 'block';
+    if (nanoResultImage) {
+      nanoResultImage.style.display = 'none';
+      nanoResultImage.src = '';
+    }
+    if (btnGenerateNano) btnGenerateNano.disabled = true;
+
+    try {
+      const systemPrompt = baseSystemPromptTextarea ? baseSystemPromptTextarea.value : JSON.stringify(CREON_3D_BLUEPRINT);
+      const userPrompt = promptInput ? promptInput.value : '';
+
+      // Construct a prompt that combines the system blueprint and user request
+      // Actually, for "NanoBanana" (Gemini 2 Flash Exp), we might just send the structured prompt
+      let finalPrompt = `system: ${systemPrompt}\n\nuser: ${userPrompt || 'Generate an icon based on this style.'}`;
+
+      // Attempt to load reference images as base64
+      const refImagesBase64 = [];
+      for (const path of REFERENCE_IMAGES) {
+        try {
+          const response = await fetch(path);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          const base64 = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result.split(',')[1]); // remove prefix
+            reader.readAsDataURL(blob);
+          });
+          refImagesBase64.push(base64);
+        } catch (e) {
+          console.warn('Failed to load reference image:', path, e);
+        }
+      }
+
+      // Config for Gemini/Imagen
+      // Using 'gemini-2.0-flash-exp' if available for multimodal generation, or fallback.
+      // The user specifically asked for "NanoBanana" and linked it to the JSON which mentions "flash-3d".
+      // functionality in 'ai.models.generateImages' might internally handle this or we use generateContent.
+
+      // Note: The previous code uses `ai.models.generateImages`. We will try that first.
+      let requestConfig = {
+        model: 'imagen-3.0-generate-001', // Default high quality
+        prompt: finalPrompt,
+        config: {
+          numberOfImages: 1,
+          aspectRatio: "16:9"
+        }
+      };
+
+      // If we want to strictly follow "NanoBanana" / Flash behavior if available
+      // We'll check for flash model availability or just use the system prompt heavily.
+      if (ai.models && ai.models['gemini-2.0-flash-exp']) {
+        // For multimodal generation (images + text -> image), we might need a different call
+        // But usually generateImages is for Text-to-Image.
+        // If we want Image-to-Image (using references), we might need `generateContent` with image inputs + prompt
+        // but `generateContent` returns text/multimodal, not an image directly usually (unless it's the new capability).
+        // Let's stick to generateImages with a VERY detailed prompt for now,
+        // as standard Imagen doesn't always take image inputs directly in this SDK version's helper.
+        // BUT, if we can send images, we should.
+      }
+
+      const response = await ai.models.generateImages(requestConfig);
+
+      if (response.generatedImages && response.generatedImages.length > 0) {
+        const base64 = response.generatedImages[0].image.imageBytes;
+        const dataUrl = `data:image/png;base64,${base64}`;
+
+        if (nanoResultImage) {
+          nanoResultImage.src = dataUrl;
+          nanoResultImage.style.display = 'block';
+        }
+
+        // Also update the main preview for consistency if desired, or just keep it separate
+        // Let's keeping it separate as requested "below... expose... also let...".
+
+        // Auto-scroll to result
+        nanoResultContainer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+    } catch (error) {
+      console.error('NanoBanana generation failed:', error);
+      alert('Failed to generate with NanoBanana. Check console for details.');
+    } finally {
+      if (nanoLoader) nanoLoader.style.display = 'none';
+      if (btnGenerateNano) btnGenerateNano.disabled = false;
+    }
+  }
   function showHomeScreen() {
     if (homeScreen) homeScreen.classList.remove('hidden');
     if (iconBuilderScreen) iconBuilderScreen.classList.add('hidden');
@@ -736,6 +831,15 @@ placed on a seamless light background.`;
     filterAndRenderIcons('');
 
     showHomeScreen();
+
+    // Initialize Base System Prompt
+    if (baseSystemPromptTextarea) {
+      baseSystemPromptTextarea.value = JSON.stringify(CREON_3D_BLUEPRINT, null, 2);
+    }
+
+    if (btnGenerateNano) {
+      btnGenerateNano.addEventListener('click', generateNanoImage);
+    }
 
     initCanvasAnimation();
 

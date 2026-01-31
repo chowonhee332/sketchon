@@ -263,5 +263,11 @@ export function buildUIPrompt(uiConcept) {
 - Text: ${colors.text || '#FFFFFF'}
 
 위 컨셉을 반영하여 현대적이고 전문적인 UI를 생성해주세요.
+
+[중요] Responsive Design & Structure Rules:
+- **NO DEVICE FRAMES**: 모바일 기기 모양의 테두리, 브라우저 창, 디바이스 그림자 등을 절대로 생성하지 마십시오. 오직 UI 자체만 코딩하십시오.
+- **FULL WIDTH & FLUID**: 각 단계(\`data-step\`)는 \`w-full\`을 사용하여 가로 공간을 가득 채워야 합니다. 고정 가로 사이즈(\`360px\`, \`1024px\` 등)를 절대 코드 내부에 적지 마십시오. 시스템이 제공하는 아트보드가 가로를 결정합니다.
+- **TAILWIND RESPONSIVE**: 반드시 Tailwind의 반응형 prefix(\`md:\`, \`lg:\`)를 사용하여 모바일(360px)과 데스크탑(1024px) 환경 모두에서 완완벽한 레이아웃을 가지도록 하십시오. 가로가 넓어지면 1열 레이아웃이 2~3열 그리드로 변해야 합니다.
+- **Multi-Artboard Structure**: 3개의 디자인 단계(Step)를 생성하되, 각각을 \`data-step="1"\`, \`data-step="2"\`, \`data-step="3"\` 속성을 가진 독립된 \`div\` 컨테이너로 감싸십시오. 이 컨테이너들은 \`id="canvas-root"\`의 직계 자식이어야 합니다.
 `.trim();
 }
