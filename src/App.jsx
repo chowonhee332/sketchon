@@ -348,59 +348,36 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 };
             });
 
-            // --- Phase 3: Experience Logic (6 Dense Spheres) ---
+            // --- Phase 3: Experience Logic (7 Dense Spheres with Focused Flow) ---
             targets.current.phase3 = Array.from({ length: activeCount }).map((_, i) => {
-                // 6 spheres arranged in hexagonal pattern
-                const sphereIndex = i % 6; // 0-5
-                const particlesPerSphere = Math.floor(activeCount / 6);
-                const indexInSphere = Math.floor(i / 6);
-
-                // Hexagonal positions (1 center + 5 around in circle)
-                const centerDist = h * 0.22; // Distance from center
+                const sphereIndex = i % 7;
+                const centerDist = h * 0.26; // Slightly more spread out for clarity
                 let centerX = 0, centerY = 0;
 
                 if (sphereIndex === 0) {
-                    // Center sphere
                     centerX = 0;
                     centerY = 0;
                 } else {
-                    // 5 spheres around center (72 degrees apart)
-                    const angle = ((sphereIndex - 1) * 72) * (Math.PI / 180);
+                    const angle = ((sphereIndex - 1) * 60) * (Math.PI / 180);
                     centerX = Math.cos(angle) * centerDist;
                     centerY = Math.sin(angle) * centerDist;
                 }
 
-                const radius = h * 0.1; // Sphere radius
-
-                // Create SOLID sphere (not just surface)
-                // Random point inside sphere using uniform distribution
+                // Higher density core: using power of 2 to pull particles inward
+                const radius = sphereIndex === 0 ? h * 0.13 : h * 0.09;
                 const u = Math.random();
                 const v = Math.random();
-                const w = Math.random();
+                const w = Math.pow(Math.random(), 2.0); // Concentrated core
 
                 const theta = u * 2 * Math.PI;
                 const phi = Math.acos(2 * v - 1);
-                const r = Math.cbrt(w) * radius; // Cube root for uniform volume distribution
+                const r = w * radius;
 
                 const x = centerX + r * Math.sin(phi) * Math.cos(theta);
                 const y = centerY + r * Math.sin(phi) * Math.sin(theta);
                 const z = r * Math.cos(phi);
 
-                // Distance from sphere center for gradient
-                const distFromCenter = r / radius; // 0 (center) to 1 (surface)
-
-                // Color gradient: bright cyan in center, darker blue at edges
-                let color;
-                if (distFromCenter < 0.3) {
-                    // Core: Bright Cyan/White
-                    color = { r: 150, g: 255, b: 255 };
-                } else if (distFromCenter < 0.7) {
-                    // Mid: Cyan
-                    color = { r: 80, g: 200, b: 255 };
-                } else {
-                    // Outer: Dark Blue
-                    color = { r: 30, g: 120, b: 200 };
-                }
+                let color = sphereIndex === 0 ? { r: 100, g: 200, b: 255 } : { r: 50, g: 150, b: 255 };
 
                 return {
                     x: x,
@@ -408,9 +385,10 @@ const ParticleEngine = ({ scrollYProgress }) => {
                     z: z,
                     color: color,
                     isDebris: false,
-                    sphereIndex: sphereIndex, // Store which sphere this particle belongs to
-                    sphereCenterX: centerX,   // Store sphere center for animation
-                    sphereCenterY: centerY
+                    sphereIndex: sphereIndex,
+                    sphereCenterX: centerX,
+                    sphereCenterY: centerY,
+                    isFlowing: Math.random() < 0.3 // Only 30% particles will flow
                 };
             });
 
@@ -506,63 +484,99 @@ const ParticleEngine = ({ scrollYProgress }) => {
             let activePhase = targets.current.phase0;
             let slideOffset = 0;
             let layerIndex = -1;
-            const maxOffset = 250; // Adjusted visibility (was 350)
+            const maxOffset = 420; // Increased for clearer side-to-side separation
 
             // Simple State Machine for Targets & Position
 
-            if (scrollValue < vh * 0.8) {
+            let targetScale = 1.0;
+            let targetOpacity = 1.0; // [NEW] Track section-specific opacity
+
+            if (scrollValue < vh * 0.9) {
                 // Hero Section
-                activePhase = targets.current.phase0; // Rings
-                slideOffset = 0; // Center
+                activePhase = targets.current.phase0;
+                slideOffset = 0;
                 layerIndex = -1;
+                targetScale = 1.0;
+                targetOpacity = 1.0;
+            } else if (scrollValue < vh * 3.8) {
+                // [FIXED] Pushed even further down (to 3.8vh) 
+                // Keep particles centered for Section 0: Problem
+                activePhase = targets.current.phase0;
+                slideOffset = 0;
+                layerIndex = -1;
+                targetScale = 0.8;
+                targetOpacity = 0.8;
             }
-            else if (scrollValue < vh * 2.0) {
-                // Section 1: Strategic Intelligence (DNA Helix)
+            else if (scrollValue < vh * 6.2) {
+                // Section 1: Research (Text: Left, Particles: Right)
+                // Threshold increased from 5.2 to 6.2 to delay the next phase
                 activePhase = targets.current.phase1 || targets.current.phase0;
                 slideOffset = maxOffset;
                 layerIndex = 0;
+                targetScale = 0.8;
+                targetOpacity = 1.0;
             }
-            else if (scrollValue < vh * 3.0) {
-                // Section 2: Visual Benchmarking (Wireframe)
+            else if (scrollValue < vh * 7.8) {
+                // Section 2: Design (Text: Right, Particles: Left)
+                // Threshold moved earlier for faster sequence
                 activePhase = targets.current.phase2 || targets.current.phase0;
                 slideOffset = -maxOffset;
                 layerIndex = 1;
+                targetScale = 0.8;
+                targetOpacity = 1.0;
             }
-            else if (scrollValue < vh * 4.0) {
-                // Section 3: Experience Logic (6 Spheres)
+            else if (scrollValue < vh * 9.8) {
+                // Section 3: Output (Text: Left, Particles: Right)
+                // Threshold moved earlier for "faster" appearance
                 activePhase = targets.current.phase3 || targets.current.phase0;
-                slideOffset = maxOffset; // Right side
-                layerIndex = 2;
-            }
-            else if (scrollValue < vh * 6.0) {
-                // Section 4: Winning Delivery (AI Star)
-                activePhase = targets.current.phase4 || targets.current.phase0;
-                slideOffset = -maxOffset;
+                slideOffset = maxOffset;
                 layerIndex = 3;
+                targetScale = 0.8;
+                targetOpacity = 1.0;
+            } else {
+                // Final CTA
+                activePhase = targets.current.phase0;
+                slideOffset = 0;
+                layerIndex = -1;
+                targetScale = 1.2;
+                targetOpacity = 1.0;
             }
 
             particles.current.forEach((p, i) => {
                 let target;
-                let lerpFactor = 0.08;
+                let lerpFactor = 0.12;
 
-                // [NEW] Slower accumulation for Data Sphere (Section 1)
-                if (layerIndex === 0) lerpFactor = 0.02;
+                if (layerIndex === 0) lerpFactor = 0.08;
+                if (layerIndex === 3) lerpFactor = 0.15; // Snappier formation for Section 3
 
                 // Select Target Particle
                 // Map current particle index to target phase index
                 // Since counts match (activeCount), we can map 1:1 or use standard modulo
+                // --- 1. Base Mapping ---
                 if (activePhase && activePhase.length > 0) {
                     target = activePhase[i % activePhase.length];
                 }
 
                 if (!target) return;
 
-                // Apply target base position
                 let tx = target.x + (target.isDebris ? 0 : cx);
                 let ty = target.y + (target.isDebris ? 0 : cy);
                 let tz = target.z;
 
-                // --- 2. Effects & Debris (Simplified) ---
+                // Flow effect for Section 3 (7 Spheres) - THIN flows as requested
+                if (layerIndex === 3 && target.sphereIndex > 0 && target.isFlowing) {
+                    const flowProgress = (currentTime * 0.25 + (p.randomSeed * 5)) % 1.0;
+                    const flowInfluence = 0.9;
+
+                    tx -= target.sphereCenterX * flowProgress * flowInfluence;
+                    ty -= target.sphereCenterY * flowProgress * flowInfluence;
+
+                    const opacityScale = 1.0 - (flowProgress * 0.4);
+                    tx = (tx - (target.isDebris ? 0 : cx)) * opacityScale + cx;
+                    ty = (ty - (target.isDebris ? 0 : cy)) * opacityScale + cy;
+                }
+
+                // --- 2. Effects & Debris ---
                 if (target.isDebris && i < 5000 && scrollValue < vh * 1.0) {
                     // Suck effect (Intro)
                     const suckProgress = (currentTime * 0.3 + p.randomSeed) % 1.0;
@@ -594,7 +608,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 if (layerIndex === -1) rotationSpeed = p.rotType === 0 ? 0.35 : 0.22; // Hero
                 else if (layerIndex === 0) rotationSpeed = 0.5; // Funnel (Fast Spin)
                 else if (layerIndex === 1) rotationSpeed = 0; // Section 2 (No Rotation)
-                else if (layerIndex === 2) rotationSpeed = 0; // Section 3 (No Rotation)
+                else if (layerIndex === 3) rotationSpeed = 0; // Section 3 (No Rotation - 6 Spheres)
 
                 // --- Unified Rotation & Position Logic ---
                 // Force unified behavior for Section 1 (Data Sphere), Section 2 (Blocks), and Section 3 (Spheres)
@@ -624,7 +638,7 @@ const ParticleEngine = ({ scrollYProgress }) => {
 
                     const cosY = Math.cos(angle + angleOffset);
                     const sinY = Math.sin(angle + angleOffset);
-                    const s = (layerIndex !== -1) ? 0.8 : 1.0;
+                    const s = targetScale;
 
                     // Apply Y-Rotation and positioning
                     tx = cx + (lx * s * cosY - lz * s * sinY);
@@ -752,13 +766,18 @@ const ParticleEngine = ({ scrollYProgress }) => {
                 // --- 7. Draw ---
                 const perspective = 1000;
                 const scale = perspective / (perspective + p.z);
-                let opacity = Math.min(1, scale * 1.1);
 
-                if (i < 5000 && scrollValue > vh * 1.5) opacity *= 0.35;
+                // [Section Sync] Conditional Intensity
+                // Hero/Hook (layerIndex === -1) vs Feature Sections (layerIndex >= 0)
+                const isFeatureSection = layerIndex >= 0;
+
+                let opacity = Math.min(1.0, scale * (isFeatureSection ? 1.5 : 1.1)) * targetOpacity;
+
+                if (i < 5000 && scrollValue > vh * 1.5) opacity *= 0.4; // Controlled background dimming
 
                 if (scale > 0.05 && opacity > 0.01) {
                     ctx.fillStyle = `rgba(${Math.floor(p.color.r)}, ${Math.floor(p.color.g)}, ${Math.floor(p.color.b)}, ${opacity})`;
-                    const s = p.size * scale;
+                    const s = p.size * scale * (isFeatureSection ? 1.2 : 0.8);
                     if (s < 1.4) {
                         ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
                     } else {
@@ -2128,8 +2147,56 @@ Constraints: ${finalData.techStack}
                 </motion.div>
             </Section >
 
+
+            {/* [NEW] The Hook: Problem Section (Moved to Top) */}
+            <Section className="z-10 min-h-screen overflow-hidden flex items-center justify-center">
+                <div className="max-w-5xl text-center px-6">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        className="relative"
+                    >
+                        <span className="text-blue-500 font-bold tracking-[0.3em] text-[10px] mb-10 block uppercase">Section 0. The Problem</span>
+                        <h2 className="text-5xl md:text-[52px] font-['Outfit'] font-bold mb-12 tracking-tighter leading-[1.3] relative">
+                            <span className="relative text-white">
+                                수많은 제안 사업,<br />
+                                <motion.span
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: false, amount: 0.2 }}
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: {
+                                            opacity: 1,
+                                            transition: { staggerChildren: 0.05, delayChildren: 0.2 }
+                                        }
+                                    }}
+                                    className="text-blue-500 inline-block"
+                                >
+                                    {Array.from("사람의 시간만 갈아 넣으실 건가요?").map((char, i) => (
+                                        <motion.span
+                                            key={i}
+                                            variants={{
+                                                hidden: { opacity: 0, y: 5, filter: 'blur(8px)' },
+                                                visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
+                                            }}
+                                        >
+                                            {char}
+                                        </motion.span>
+                                    ))}
+                                </motion.span>
+                            </span>
+                        </h2>
+                        <div className="text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed font-light space-y-2 mb-12">
+                            단순 반복되는 밤샘 작업은 이제 그만, 인적 리소스의 한계를 AI로 돌파하세요.
+                        </div>
+                    </motion.div>
+                </div>
+            </Section>
+
             {/* Feature Showcase 2.0: Interactive Scroll Journey - IMMEDIATELY after Hero */}
-            < div className="relative" >
+            <div className="relative">
                 {/* Feature 1: Strategic Intelligence */}
                 < Section className="z-10 min-h-screen" >
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
@@ -2142,16 +2209,42 @@ Constraints: ${finalData.techStack}
                         >
                             <div className="absolute -inset-8 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
                             <div className="relative p-0 bg-transparent">
-                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 1. STRATEGIC INTELLIGENCE</span>
-                                <h2 className="text-5xl md:text-[62px] font-['Outfit'] font-medium tracking-[-0.05em] mb-10 leading-[1.0] text-white">
-                                    Turn raw ideas <br /> <span className="text-white">into winning plans.</span>
+                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 1. INTELLIGENCE (RESEARCH)</span>
+                                <h2 className="text-5xl md:text-[52px] font-['Outfit'] font-bold tracking-[-0.05em] mb-10 leading-[1.2] text-white">
+                                    아이디어만 던지세요.<br />
+                                    <motion.span
+                                        initial="hidden"
+                                        whileInView="visible"
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        variants={{
+                                            hidden: { opacity: 0 },
+                                            visible: {
+                                                opacity: 1,
+                                                transition: { staggerChildren: 0.05, delayChildren: 0.2 }
+                                            }
+                                        }}
+                                        className="text-blue-500 inline-block"
+                                    >
+                                        {Array.from("리서치와 분석은").map((char, i) => (
+                                            <motion.span
+                                                key={i}
+                                                variants={{
+                                                    hidden: { opacity: 0, x: 2, filter: 'blur(8px)' },
+                                                    visible: { opacity: 1, x: 0, filter: 'blur(0px)' }
+                                                }}
+                                            >
+                                                {char}
+                                            </motion.span>
+                                        ))}
+                                    </motion.span>
+                                    <br />저희가 끝냈습니다.
                                 </h2>
                                 <p className="text-lg text-white/60 leading-relaxed max-w-md font-light">
-                                    파편화된 RFP와 모호한 아이디어를 실시간 시장 데이터와 결합하여 정교한 비즈니스 전략으로 변환합니다. 수주의 시작은 완벽한 분석에서 시작됩니다.
+                                    방대한 RFP 분석부터 시장 조사까지, Sketchon AI가 제안의 '맥'을 짚어드립니다.
                                 </p>
                                 <div className="mt-12 flex items-center gap-4">
                                     <button className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white transition-colors tracking-widest uppercase">
-                                        Learn more <ArrowRight size={14} />
+                                        Analyze Process <ArrowRight size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -2177,16 +2270,42 @@ Constraints: ${finalData.techStack}
                         >
                             <div className="absolute -inset-8 bg-gradient-to-bl from-purple-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
                             <div className="relative p-0 bg-transparent flex flex-col items-end">
-                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 2. VISUAL BENCHMARKING</span>
-                                <h2 className="text-5xl md:text-[62px] font-['Outfit'] font-medium tracking-[-0.05em] mb-10 leading-[1.0] text-white">
-                                    Build the skeleton <br /> <span className="text-white">of your service.</span>
+                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 2. EXPERIENCE (DESIGN)</span>
+                                <h2 className="text-5xl md:text-[52px] font-['Outfit'] font-bold tracking-[-0.05em] mb-10 leading-[1.2] text-white">
+                                    분석을 기반으로 <br />
+                                    <motion.span
+                                        initial="hidden"
+                                        whileInView="visible"
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        variants={{
+                                            hidden: { opacity: 0 },
+                                            visible: {
+                                                opacity: 1,
+                                                transition: { staggerChildren: 0.05, delayChildren: 0.2 }
+                                            }
+                                        }}
+                                        className="text-blue-500 inline-block"
+                                    >
+                                        {Array.from("최적의 UI 디자인까지,").map((char, i) => (
+                                            <motion.span
+                                                key={i}
+                                                variants={{
+                                                    hidden: { opacity: 0, y: -5, filter: 'blur(8px)' },
+                                                    visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
+                                                }}
+                                            >
+                                                {char}
+                                            </motion.span>
+                                        ))}
+                                    </motion.span>
+                                    <br />즉시 그려냅니다.
                                 </h2>
                                 <p className="text-lg text-white/60 leading-relaxed max-w-md font-light text-right">
-                                    글로벌 리딩 서비스의 UI/UX 패턴을 분석하여 제안의 시각적 근거를 구축합니다. 경쟁사의 약점을 파악하고 우리만의 압도적인 차별화 포인트를 시각적으로 증명합니다.
+                                    설계된 구조(IA)를 바탕으로 와이어프레임과 UI 컨셉을 실시간 시각화하여 설득력을 높입니다.
                                 </p>
                                 <div className="mt-12 flex items-center gap-4">
                                     <button className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white transition-colors tracking-widest uppercase">
-                                        <ArrowRight size={14} className="rotate-180" /> Explore Engine
+                                        <ArrowRight size={14} className="rotate-180" /> Visual Engine
                                     </button>
                                 </div>
                             </div>
@@ -2194,258 +2313,217 @@ Constraints: ${finalData.techStack}
                     </div>
                 </Section >
 
-                {/* Feature 3: Experience Logic */}
-                < Section className="z-10 min-h-screen" >
+
+
+                {/* Feature 4: The Winning Delivery */}
+                <Section className="z-10 min-h-screen">
                     <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: false, margin: "-100px" }}
                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                            className="relative group mt-0"
+                            className="relative group"
                         >
-                            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute -inset-8 bg-gradient-to-br from-green-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
                             <div className="relative p-0 bg-transparent">
-                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 3. EXPERIENCE LOGIC</span>
-                                <h2 className="text-5xl md:text-[62px] font-['Outfit'] font-medium tracking-[-0.05em] mb-10 leading-[1.0] text-white">
-                                    Design and prototype <br /> <span className="text-white">in one place</span>
+                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 3. DELIVERY (OUTPUT)</span>
+                                <h2 className="text-5xl md:text-[52px] font-['Outfit'] font-bold tracking-[-0.05em] mb-10 leading-[1.2] text-white">
+                                    <motion.span
+                                        initial="hidden"
+                                        whileInView="visible"
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        variants={{
+                                            hidden: { opacity: 0 },
+                                            visible: {
+                                                opacity: 1,
+                                                transition: { staggerChildren: 0.05, delayChildren: 0.2 }
+                                            }
+                                        }}
+                                        className="text-blue-500 inline-block"
+                                    >
+                                        {Array.from("고퀄리티 제안 장표까지,").map((char, i) => (
+                                            <motion.span
+                                                key={i}
+                                                variants={{
+                                                    hidden: { opacity: 0, filter: 'blur(10px)' },
+                                                    visible: { opacity: 1, filter: 'blur(0px)' }
+                                                }}
+                                            >
+                                                {char}
+                                            </motion.span>
+                                        ))}
+                                    </motion.span>
+                                    <br />클릭 한 번으로 <br />자동 생성하세요.
                                 </h2>
                                 <p className="text-lg text-white/60 leading-relaxed max-w-md font-light">
-                                    타겟 유저의 여정을 설계하고 AI 히트맵 예측을 통해 사용성을 사전에 검증합니다. 모든 디자인 결정에는 흔들리지 않는 데이터 논리가 뒷받침됩니다.
+                                    디자인 고민 없이 바로 제출 가능한 PPT 결과물로 마감 시간을 압도적으로 단축합니다.
                                 </p>
                                 <div className="mt-12 flex items-center gap-4">
                                     <button className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white transition-colors tracking-widest uppercase">
-                                        See Heatmaps <ArrowRight size={14} />
+                                        Download Demo <ArrowRight size={14} />
                                     </button>
                                 </div>
                             </div>
                         </motion.div>
                         <div className="relative aspect-square overflow-hidden">
-                            {/* Particles form Heatmap shape */}
+                            {/* Particles form 6 Spheres shape */}
                         </div>
                     </div>
-                </Section >
+                </Section>
+            </div>
 
-                {/* Feature 4: The Winning Delivery */}
-                < Section className="z-10 min-h-screen" >
-                    <div className="grid md:grid-cols-2 gap-20 max-w-7xl w-full items-center px-12">
-                        <div className="relative aspect-square overflow-hidden order-2 md:order-1">
-                            {/* Particles form Solid Stacks shape */}
-                        </div>
-                        <motion.div
-                            initial={{ opacity: 0, x: 50 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: false, margin: "-100px" }}
-                            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                            className="order-1 md:order-2 text-right flex flex-col items-end relative group"
+            {/* Final CTA Section */}
+            <Section className="z-10 min-h-[85vh] flex flex-col items-center justify-center text-center pb-40">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                    className="max-w-4xl px-6"
+                >
+                    <h2 className="text-4xl md:text-[58px] font-['Outfit'] font-bold mb-16 tracking-tighter text-white leading-[1.1]">
+                        더 스마트한 제안의 시작, <br />
+                        <motion.span
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: false, amount: 0.2 }}
+                            variants={{
+                                hidden: { opacity: 0 },
+                                visible: {
+                                    opacity: 1,
+                                    transition: {
+                                        staggerChildren: 0.1,
+                                        delayChildren: 0.2
+                                    }
+                                }
+                            }}
+                            className="text-blue-500 inline-block"
                         >
-                            <div className="absolute -inset-8 bg-gradient-to-bl from-green-500/10 to-transparent blur-2xl rounded-[3rem] opacity-50 group-hover:opacity-100 transition-opacity" />
-                            <div className="relative p-0 bg-transparent flex flex-col items-end">
-                                <span className="text-white font-bold tracking-[0.3em] text-[10px] mb-8 block uppercase">Section 4. THE WINNING DELIVERY</span>
-                                <h2 className="text-5xl md:text-[62px] font-['Outfit'] font-medium tracking-[-0.05em] mb-10 leading-[1.0] text-white">
-                                    Create your final <br /> <span className="text-white">pitch in seconds</span>
-                                </h2>
-                                <p className="text-lg text-white/60 leading-relaxed max-w-md font-light text-right">
-                                    Creon 엔진이 분석된 로직을 바탕으로 고해상도 UI와 3D 에셋을 즉시 생성합니다. 모든 기획과 디자인은 즉시 제출 가능한 전문가 수준의 제안 장표로 완성됩니다.
-                                </p>
-                                <div className="mt-12 flex items-center gap-4">
-                                    <button className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white transition-colors tracking-widest uppercase">
-                                        Build Now <ArrowRight size={14} />
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                </Section >
-            </div >
+                            {Array.from("Sketchon").map((char, i) => (
+                                <motion.span
+                                    key={i}
+                                    variants={{
+                                        hidden: { opacity: 0, y: 10, filter: 'blur(10px)' },
+                                        visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
+                                    }}
+                                >
+                                    {char}
+                                </motion.span>
+                            ))}
+                        </motion.span>
+                    </h2>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="h-[54px] bg-blue-600 text-white px-12 rounded-full font-bold text-base shadow-2xl hover:bg-blue-500 transition-all flex items-center gap-3 mx-auto"
+                    >
+                        Get Started <ArrowRight size={18} />
+                    </motion.button>
+                </motion.div>
+            </Section>
 
-            {/* Section: Social Proof (Infinite Slider) - Moved here */}
-            < div className="relative z-10 py-24 bg-black/50 backdrop-blur-sm border-y border-white/5 overflow-hidden" >
-                <div className="max-w-7xl mx-auto px-6 mb-12 text-center">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em]">Trusted by Forward-Thinking Teams</p>
+            {/* Infinite Testimonials Section */}
+            <div className="relative z-10 py-32 bg-black overflow-hidden border-t border-white/5">
+                <div className="max-w-7xl mx-auto px-6 mb-16 text-center">
+                    <span className="text-blue-500 font-bold tracking-[0.4em] text-[10px] uppercase mb-4 block">Wall of Love</span>
+                    <h2 className="text-4xl font-['Outfit'] font-bold text-white tracking-tighter">
+                        실시간으로 증명되는 <span className="text-white/40">생산성의 차이.</span>
+                    </h2>
                 </div>
-                <div className="flex gap-24 animate-infinite-scroll whitespace-nowrap px-10">
-                    {['Google', 'Vercel', 'Stripe', 'Framer', 'Linear', 'OpenAI', 'Anthropic', 'Netflix', 'Airbnb', 'Replicate'].map((brand) => (
-                        <div key={brand} className="text-4xl font-['Outfit'] font-bold text-white/10 hover:text-white/30 transition-colors uppercase tracking-tighter">
-                            {brand}
-                        </div>
-                    ))}
-                    {['Google', 'Vercel', 'Stripe', 'Framer', 'Linear', 'OpenAI', 'Anthropic', 'Netflix', 'Airbnb', 'Replicate'].map((brand) => (
-                        <div key={`${brand}-clone`} className="text-4xl font-['Outfit'] font-bold text-white/10 hover:text-white/30 transition-colors uppercase tracking-tighter">
-                            {brand}
-                        </div>
-                    ))}
-                </div>
-            </div >
 
-            {/* Section 7: Bento Grid (Core Capabilities) */}
-            < section className="relative z-10 py-32 px-6 bg-black" >
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-20">
-                        <span className="text-blue-500 font-bold tracking-[0.3em] text-[10px] mb-6 block uppercase">Capability</span>
-                        <h2 className="text-5xl font-['Outfit'] font-bold tracking-tighter">Everything you need to <span className="text-white/40">win the deal.</span></h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[300px]">
-                        <div className="md:col-span-2 bg-white/5 border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Zap size={120} />
+                {/* Left Row */}
+                <div className="flex gap-6 mb-6 animate-infinite-scroll-slow">
+                    {[1, 2, 3, 4, 1, 2, 3, 4].map((_, i) => (
+                        <div key={i} className="flex-shrink-0 w-[400px] p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] hover:bg-white/[0.07] transition-colors group">
+                            <div className="text-blue-500 mb-6 flex gap-1">
+                                {[1, 2, 3, 4, 5].map(s => <span key={s} className="text-sm">★</span>)}
                             </div>
-                            <h3 className="text-2xl font-['Outfit'] font-bold mb-4">Precision Engineering</h3>
-                            <p className="text-slate-400 max-w-sm font-light">단순 생성을 넘어 실제 비즈니스 로직이 담긴 정교한 결과물을 제공합니다. 모든 버튼 하나, 텍스트 한 줄에 근거가 있습니다.</p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 flex flex-col justify-end">
-                            <h3 className="text-xl font-['Outfit'] font-bold mb-2">Real-time Data</h3>
-                            <p className="text-sm text-slate-500 font-light">최신 시장 트렌드와 경쟁사 데이터를 즉시 반영합니다.</p>
-                        </div>
-                        <div className="bg-blue-600 rounded-[2.5rem] p-10 flex flex-col justify-between group cursor-pointer overflow-hidden relative">
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Wand2 className="text-white" size={32} />
+                            <p className="text-white text-lg mb-8 font-light italic leading-relaxed">
+                                {i % 4 === 0 ? "지금까지 사용해본 AI 도구 중 가장 논리적입니다. 단순한 생성물이 아니라 비즈니스 맥락을 정확히 꿰뚫고 있어요." :
+                                    i % 4 === 1 ? "The bridge between logic and visualization is finally here. Sketchon saved our team 40+ hours on the last pitch." :
+                                        i % 4 === 2 ? "제안서 작성이 즐거워진 건 처음입니다. 분석 데이터의 깊이가 놀라울 정도로 정교합니다." :
+                                            "단순한 이미지 생성을 넘어 기획의 뼈대를 잡아주는 것이 가장 큰 강점입니다."}
+                            </p>
                             <div>
-                                <h3 className="text-xl font-['Outfit'] font-bold text-white mb-2">Creon Engine®</h3>
-                                <p className="text-blue-100 text-sm font-light">Sketchon만의 독자적인 AI 디자인 추론 엔진.</p>
+                                <p className="font-bold text-white font-['Outfit']">
+                                    {i % 4 === 0 ? "김태우" : i % 4 === 1 ? "Sarah Chen" : i % 4 === 2 ? "이현우" : "David Park"}
+                                </p>
+                                <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">
+                                    {i % 4 === 0 ? "Global Tech Lead at V" : i % 4 === 1 ? "Senior Product Designer at F" : i % 4 === 2 ? "Strategy Director at A" : "Product Manager at L"}
+                                </p>
                             </div>
                         </div>
-                        <div className="md:col-span-2 bg-white/5 border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden">
-                            <div className="grid grid-cols-2 h-full items-center">
-                                <div>
-                                    <h3 className="text-2xl font-['Outfit'] font-bold mb-4">Design System First</h3>
-                                    <p className="text-slate-400 font-light">임의의 디자인이 아닌, 확장 가능한 디자인 시스템 가이드라인을 함께 생성합니다.</p>
-                                </div>
-                                <div className="flex justify-end pr-10">
-                                    <div className="w-32 h-32 border-4 border-dashed border-white/10 rounded-full flex items-center justify-center animate-spin-slow">
-                                        <div className="w-16 h-16 bg-white/10 rounded-xl rotate-45" />
-                                    </div>
-                                </div>
+                    ))}
+                </div>
+
+                {/* Right Row (Reverse) */}
+                <div className="flex gap-6 animate-infinite-scroll-reverse-slow">
+                    {[1, 2, 3, 4, 1, 2, 3, 4].map((_, i) => (
+                        <div key={i} className="flex-shrink-0 w-[400px] p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] hover:bg-white/[0.07] transition-colors group">
+                            <div className="text-blue-500 mb-6 flex gap-1">
+                                {[1, 2, 3, 4, 5].map(s => <span key={s} className="text-sm">★</span>)}
+                            </div>
+                            <p className="text-white text-lg mb-8 font-light italic leading-relaxed">
+                                {i % 4 === 0 ? "협업 과정에서 가장 큰 고민이었던 시각화 문제가 단번에 해결되었습니다." :
+                                    i % 4 === 1 ? "It's like having a senior strategist and a top-tier designer available 24/7." :
+                                        i % 4 === 2 ? "기획서의 퀄리티 자체가 달라졌습니다. 투자자 미팅에서 반응이 뜨거워요." :
+                                            "Sketchon is NOT just another AI. It's a fundamental shift in how we approach project planning."}
+                            </p>
+                            <div>
+                                <p className="font-bold text-white font-['Outfit']">
+                                    {i % 4 === 0 ? "이지혜" : i % 4 === 1 ? "James Wilson" : i % 4 === 2 ? "최준석" : "Emily Smith"}
+                                </p>
+                                <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">
+                                    {i % 4 === 0 ? "CPO at Techon" : i % 4 === 1 ? "Creative Director at N" : i % 4 === 2 ? "Founder at Spark" : "Global Operations at M"}
+                                </p>
                             </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
-            </section >
 
-            {/* Section 8: Interactive Demo (Simplified Visual) */}
-            < section className="relative z-10 py-32 px-6 bg-black overflow-hidden" >
-                <div className="max-w-6xl mx-auto bg-[#0a0a0a] border border-white/10 rounded-[3rem] p-1 overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)]">
-                    <div className="bg-black/40 rounded-[2.8rem] p-12 md:p-20 text-center relative">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
-                        <h2 className="text-4xl md:text-6xl font-['Outfit'] font-bold mb-8 tracking-tighter">Experience the <span className="text-blue-500">Speed.</span></h2>
-                        <p className="text-slate-400 mb-12 max-w-2xl mx-auto font-light text-lg">기존에 며칠이 걸리던 리서치와 시안 제작 작업을 단 몇 분 만에 끝내세요. <br />팀의 생산성이 10배 이상 향상됩니다.</p>
-                        <div className="relative aspect-video max-w-4xl mx-auto bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center group cursor-pointer overflow-hidden">
-                            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-white text-black rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                <Play fill="currentColor" size={32} />
-                            </div>
-                            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Sketchon Engine v2.0</div>
-                                <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest">04:15 - Logic Sync</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section >
-
-            {/* Section 9: Testimonials */}
-            < section className="relative z-10 py-32 px-6 bg-black" >
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            { name: '김태우', role: 'Global Tech Lead at V', text: '지금까지 사용해본 AI 도구 중 가장 논리적입니다. 단순한 생성물이 아니라 비즈니스 맥락을 정확히 꿰뚫고 있어요.' },
-                            { name: 'Sarah Chen', role: 'Senior Product Designer at F', text: 'The bridge between logic and visualization is finally here. Sketchon saved our team 40+ hours on the last pitch.' },
-                            { name: '이현우', role: 'Strategy Director at A', text: '제안서 작성이 즐거워진 건 처음입니다. 분석 데이터의 깊이가 놀라울 정도로 정교합니다.' }
-                        ].map((t, i) => (
-                            <div key={i} className="p-10 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/[0.07] transition-colors">
-                                <div className="text-blue-500 mb-6">
-                                    {[1, 2, 3, 4, 5].map(s => <span key={s}>★</span>)}
-                                </div>
-                                <p className="text-white text-lg mb-8 font-light italic leading-relaxed">"{t.text}"</p>
-                                <div>
-                                    <p className="font-bold text-white">{t.name}</p>
-                                    <p className="text-xs text-slate-500">{t.role}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section >
-
-            {/* Section 10: Final Showcase (Gallery) */}
-            < section className="relative z-10 py-32 px-6 bg-black" >
-                <div className="max-w-7xl mx-auto text-center">
-                    <h2 className="text-5xl md:text-7xl font-['Outfit'] font-bold mb-20 tracking-tighter">Crafted with <span className="text-white/30">Sketchon.</span></h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                            <div key={i} className="aspect-[3/4] bg-white/5 border border-white/5 rounded-2xl overflow-hidden group">
-                                <div className="w-full h-full bg-gradient-to-br from-white/10 to-transparent group-hover:scale-105 transition-transform duration-700" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section >
-
-            {/* Section: Feature Summary / Capability (Bento) */}
-            < section className="relative z-10 py-32 px-6 bg-black" >
-                {/* ... existing bento code ... */}
-            </section >
-
-            {/* Section: Problem (Chaos to Clarity) - Now after features to explain WHY they matter */}
-            < Section className="z-10 min-h-screen overflow-hidden" >
-                <div className="max-w-4xl text-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative"
-                    >
-                        <span className="text-blue-500 font-bold tracking-[0.3em] text-[10px] mb-10 block uppercase">The Old Workflow</span>
-                        <h2 className="text-6xl md:text-8xl font-['Outfit'] font-bold mb-12 tracking-tighter leading-[0.9] relative">
-                            {/* Chaos background text */}
-                            <span className="absolute inset-x-0 top-0 blur-3xl opacity-20 pointer-events-none select-none text-slate-500">
-                                72 hours of manual research. Zero logic. Blank canvas anxiety. Overwhelmed. Slow. Messy.
-                            </span>
-                            <span className="relative text-white/90">
-                                빈 화면 앞에서 지치는 <br />
-                                <span className="text-white/30">무의미한 삽질의 시간들.</span>
-                            </span>
-                        </h2>
-                        <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed font-light">
-                            기획부터 장표 한 장까지 어지러운 데이터 속에서 길을 잃지 마세요. <br />
-                            <span className="text-white font-medium">Chaos</span>에서 <span className="text-blue-500 font-medium">Clarity</span>로의 전환이 시작됩니다.
-                        </p>
-                    </motion.div>
-                </div>
-            </Section >
-
-            {/* Section: Final CTA */}
-            < section className="relative z-10 py-40 px-6 bg-black" >
-                <div className="max-w-4xl mx-auto text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                    >
-                        <h2 className="text-6xl md:text-8xl font-['Outfit'] font-bold mb-12 tracking-tighter leading-tight">Start building <br /> the future.</h2>
-                        <div className="flex flex-col md:flex-row gap-4 justify-center">
-                            <button className="h-16 px-12 rounded-full bg-blue-600 text-white font-bold text-lg hover:bg-blue-500 hover:scale-105 transition-all shadow-[0_0_30px_rgba(59,130,246,0.5)]">Get Started Today</button>
-                            <button className="h-16 px-12 rounded-full bg-white/10 text-white font-bold text-lg border border-white/20 hover:bg-white/20 transition-all">Book a Demo</button>
-                        </div>
-                    </motion.div>
-                </div>
-            </section >
+                {/* CSS for animations */}
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @keyframes scroll {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(calc(-400px * 4 - 1.5rem * 4)); }
+                    }
+                    @keyframes scroll-reverse {
+                        0% { transform: translateX(calc(-400px * 4 - 1.5rem * 4)); }
+                        100% { transform: translateX(0); }
+                    }
+                    .animate-infinite-scroll-slow {
+                        animation: scroll 60s linear infinite;
+                        width: max-content;
+                    }
+                    .animate-infinite-scroll-reverse-slow {
+                        animation: scroll-reverse 60s linear infinite;
+                        width: max-content;
+                    }
+                `}} />
+            </div>
 
             {/* Footer */}
-            < footer className="relative py-20 border-t border-white/10 bg-black mt-20 z-10" >
-                <div className="max-w-4xl mx-auto text-center px-6">
-                    <h3 className="text-3xl font-['Outfit'] font-bold mb-6 text-white">Ready to Build?</h3>
-                    <p className="text-slate-400 mb-8">지금 바로 Sketchon과 함께 제안의 퀄리티를 높여보세요.</p>
-                    <Button size="lg" className="rounded-full h-12 px-10 bg-white text-black hover:scale-105 transition-transform hover:bg-slate-200">
-                        Start Free Trial
-                    </Button>
-                    <div className="mt-12 flex justify-center gap-6 text-sm text-slate-500">
-                        <a href="#" className="hover:text-slate-300">Terms</a>
-                        <a href="#" className="hover:text-slate-300">Privacy</a>
-                        <a href="#" className="hover:text-slate-300">Contact</a>
+            <footer className="relative z-10 py-12 border-t border-white/5 bg-black mt-20">
+                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white ring-4 ring-blue-500/20">S</div>
+                        <span className="text-xl font-['Outfit'] font-bold tracking-tighter text-white">Sketchon</span>
+                    </div>
+
+                    <div className="flex gap-8 text-sm text-white/40 font-medium tracking-wide">
+                        <a href="#" className="hover:text-white transition-all">Product</a>
+                        <a href="#" className="hover:text-white transition-all">Privacy</a>
+                        <a href="#" className="hover:text-white transition-all">Terms</a>
+                        <a href="#" className="hover:text-white transition-all">Contact</a>
+                    </div>
+
+                    <div className="text-[12px] text-white/20 font-medium font-['Outfit'] uppercase tracking-widest">
+                        © 2026 Sketchon Inc. All rights reserved.
                     </div>
                 </div>
-            </footer >
+            </footer>
 
 
 
