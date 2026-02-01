@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ANALYSIS_SYSTEM_PROMPT } from "../constants/prompts";
+import { ANALYSIS_SYSTEM_PROMPT, SYSTEM_PROMPT } from "../constants/prompts";
 
 const MODEL_MAPPING = {
     'gemini-3-flash': 'gemini-3-flash-preview',
